@@ -3,7 +3,7 @@ public enum TokenType {
     LEFT_BRACE, RIGHT_BRACE, // []
 
     COMMA, ASSIGNMENT, COLON, // , = :
-    OCTOTHORPE, AMPERSAND, // # &
+    OCTOTHORPE, AMPERSAND, DOLLAR, // # & $
     ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION, MODULO, // + - * / %
 
     GREATER, LESSER, // > <
@@ -20,9 +20,9 @@ public enum TokenType {
 
     // RESERVED WORDS
     AND, OR, NOT,
-    OUTPUT, INPUT,
-    VAR, AS,
+    PRINT, SCAN,
+    DECLARE,
     INT, BOOL, FLOAT, CHAR,
-    START, STOP,
-    IF, ELSE, WHILE, EOL, EOF
+    SCRIPT, AREA, START, END,
+    IF, ELSE, FOR, REPEAT, WHEN, EOL, EOF
 }

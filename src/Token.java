@@ -7,19 +7,22 @@ public class Token {
             put("AND", TokenType.AND);
             put("OR", TokenType.OR);
             put("NOT", TokenType.NOT);
-            put("OUTPUT", TokenType.OUTPUT);
-            put("INPUT", TokenType.INPUT);
-            put("VAR", TokenType.VAR);
-            put("AS", TokenType.AS);
+            put("PRINT", TokenType.PRINT);
+            put("SCAN", TokenType.SCAN);
+            put("DECLARE", TokenType.DECLARE);
             put("INT", TokenType.INT);
             put("BOOL", TokenType.BOOL);
             put("FLOAT", TokenType.FLOAT);
             put("CHAR", TokenType.CHAR);
+            put("SCRIPT", TokenType.SCRIPT);
+            put("AREA", TokenType.AREA);
             put("START", TokenType.START);
-            put("STOP", TokenType.STOP);
+            put("END", TokenType.END);
             put("IF", TokenType.IF);
             put("ELSE", TokenType.ELSE);
-            put("WHILE", TokenType.WHILE);
+            put("FOR", TokenType.FOR);
+            put("REPEAT", TokenType.REPEAT);
+            put("WHEN", TokenType.WHEN);
         }
     };
 
@@ -34,6 +37,7 @@ public class Token {
             put(TokenType.COLON, ":");
             put(TokenType.OCTOTHORPE, "#");
             put(TokenType.AMPERSAND, "&");
+            put(TokenType.DOLLAR, "$");
             put(TokenType.ADDITION, "+");
             put(TokenType.SUBTRACTION, "-");
             put(TokenType.MULTIPLICATION, "*");
@@ -48,19 +52,22 @@ public class Token {
             put(TokenType.AND, "AND");
             put(TokenType.OR, "OR");
             put(TokenType.NOT, "NOT");
-            put(TokenType.OUTPUT, "OUTPUT");
-            put(TokenType.INPUT, "INPUT");
-            put(TokenType.VAR, "VAR");
-            put(TokenType.AS, "AS");
+            put(TokenType.PRINT, "PRINT");
+            put(TokenType.SCAN, "SCAN");
+            put(TokenType.DECLARE, "DECLARE");
             put(TokenType.INT, "INT");
             put(TokenType.BOOL, "BOOL");
             put(TokenType.FLOAT, "FLOAT");
             put(TokenType.CHAR, "CHAR");
+            put(TokenType.SCRIPT, "SCRIPT");
+            put(TokenType.AREA, "AREA");
             put(TokenType.START, "START");
-            put(TokenType.STOP, "STOP");
+            put(TokenType.END, "END");
             put(TokenType.IF, "IF");
             put(TokenType.ELSE, "ELSE");
-            put(TokenType.WHILE, "WHILE");
+            put(TokenType.FOR, "FOR");
+            put(TokenType.REPEAT, "REPEAT");
+            put(TokenType.WHEN, "WHEN");
         }
     };
 
