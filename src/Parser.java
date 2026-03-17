@@ -33,14 +33,30 @@ public class Parser {
 
     List<ParsingStatement> parse(List<Token> tokens) throws Exception {
         this.tokens = tokens;
-        while (!isAtEnd())
+        // Expect: SCRIPT AREA EOL
+        expectThenNext(TokenType.SCRIPT, "Expected 'SCRIPT' at start of program.");
+        expectThenNext(TokenType.AREA, "Expected 'AREA' after 'SCRIPT'.");
+        expectThenNext(TokenType.EOL, "Expected new line after 'SCRIPT AREA'.");
+        // Expect: START SCRIPT EOL
+        expectThenNext(TokenType.START, "Expected 'START' before program block.");
+        expectThenNext(TokenType.SCRIPT, "Expected 'SCRIPT' after 'START'.");
+        expectThenNext(TokenType.EOL, "Expected new line after 'START SCRIPT'.");
+        inScope = true;
+        scopeCounter++;
+        varDeclarations = true;
+        while (!compareCurrent(TokenType.END) && !isAtEnd())
             statements.add(parseDeclaration());
+        // Expect: END SCRIPT
+        expectThenNext(TokenType.END, "Expected 'END' to close program block.");
+        expectThenNext(TokenType.SCRIPT, "Expected 'SCRIPT' after 'END'.");
+        if (!isAtEnd())
+            expectThenNext(TokenType.EOL, "Expected new line after 'END SCRIPT'.");
 
         return statements;
     }
 
     private ParsingStatement parseDeclaration() throws Exception {
-        if (compareMultipleThenNext(TokenType.VAR))
+        if (compareMultipleThenNext(TokenType.DECLARE))
             return parseVariableDeclaration();
 
         return parseStatement();
@@ -51,6 +67,13 @@ public class Parser {
             isDeclaring = true;
         if (!varDeclarations)
             throw lexerJ.newError(getPrevious(), "Misplaced variable declaration.");
+
+        // Type comes immediately after DECLARE
+        if (!compareMultipleThenNext(TokenType.BOOL, TokenType.CHAR, TokenType.FLOAT, TokenType.INT))
+            throw lexerJ.newError(getCurrent(), "Expected data type after 'DECLARE'.");
+        TokenType type = getPrevious().type;
+
+        // Parse first variable
         Token name;
         if (compareCurrent(TokenType.IDENTIFIER))
             name = expectThenNext(TokenType.IDENTIFIER, "Expected variable name.");
@@ -58,16 +81,6 @@ public class Parser {
             throw lexerJ.newError(getCurrent(), "Expected valid variable name but got reserved keyword.");
         else
             throw lexerJ.newError(getCurrent(), "Expected valid variable name.");
-        TokenType type;
-
-        int tempCurrent = current;
-        while (!compareMultipleThenNext(TokenType.AS, TokenType.EOL, TokenType.START))
-            current++;
-        if (compareMultipleThenNext(TokenType.BOOL, TokenType.CHAR, TokenType.FLOAT, TokenType.INT))
-            type = getPrevious().type;
-        else
-            throw lexerJ.newError(name, "Expected declaration variable data type.");
-        current = tempCurrent;
 
         ParsingExpression initializer = null;
         if (compareMultipleThenNext(TokenType.ASSIGNMENT)) {
@@ -114,9 +127,6 @@ public class Parser {
             statements.add(new ParsingStatement.Var(name, initializer));
         }
 
-        if (expectThenNext(TokenType.AS, "Expected declaration variable data type.") != null
-                && !compareMultipleThenNext(TokenType.BOOL, TokenType.CHAR, TokenType.FLOAT, TokenType.INT))
-            throw lexerJ.newError(name, "Expected declaration variable data type.");
         expectThenNext(TokenType.EOL, "Expected new line after declaration.");
         if (isDeclaring)
             isDeclaring = false;
@@ -128,18 +138,18 @@ public class Parser {
     }
 
     private ParsingStatement parseStatement() throws Exception {
-        if (compareMultipleThenNext(TokenType.START))
-            return new ParsingStatement.Block(parseBlock());
         if (!inScope)
             throw lexerJ.newError(getCurrent(), "Statement is out of scope.");
         if (compareMultipleThenNext(TokenType.IF))
             return parseIf();
-        if (compareMultipleThenNext(TokenType.OUTPUT))
-            return parseOutput();
-        if (compareMultipleThenNext(TokenType.INPUT))
-            return parseInput();
-        if (compareMultipleThenNext(TokenType.WHILE))
-            return parseWhile();
+        if (compareMultipleThenNext(TokenType.PRINT))
+            return parsePrint();
+        if (compareMultipleThenNext(TokenType.SCAN))
+            return parseScan();
+        if (compareMultipleThenNext(TokenType.REPEAT))
+            return parseRepeatWhen();
+        if (compareMultipleThenNext(TokenType.FOR))
+            return parseFor();
 
         return parseExpressionStatement();
     }
@@ -273,6 +283,31 @@ public class Parser {
     }
 
     private ParsingExpression parsePrimary() throws Exception {
+        if (compareMultipleThenNext(TokenType.DOLLAR))
+            return new ParsingExpression.Literal("\n");
+        if (compareMultipleThenNext(TokenType.OCTOTHORPE))
+            return new ParsingExpression.Literal("\n");
+        // Escape code: [x] — e.g. [#]->#, [[]->[ , []]->]
+        if (compareMultipleThenNext(TokenType.LEFT_BRACE)) {
+            String content;
+            if (compareCurrent(TokenType.RIGHT_BRACE)) {
+                // []] case: first ] is content, second ] closes the escape
+                next(); // consume content ]
+                expectThenNext(TokenType.RIGHT_BRACE, "Expected ']' to close escape sequence.");
+                content = "]";
+            } else {
+                StringBuilder sb = new StringBuilder();
+                while (!compareCurrent(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+                    sb.append(getCurrent().lexeme);
+                    next();
+                }
+                expectThenNext(TokenType.RIGHT_BRACE, "Expected ']' to close escape sequence.");
+                content = sb.toString();
+            }
+            if (content.equals("#"))
+                return new ParsingExpression.Literal("#");
+            return new ParsingExpression.Literal(content);
+        }
         if (compareMultipleThenNext(TokenType.INT_LIT, TokenType.FLOAT_LIT, TokenType.BOOL_LIT, TokenType.CHAR_LIT,
                 TokenType.STR_LIT))
             return new ParsingExpression.Literal(getPrevious().literal);
@@ -292,77 +327,104 @@ public class Parser {
 
     private ParsingStatement parseIf() throws Exception {
         Token ifToken = getPrevious();
-        expectThenNext(TokenType.LEFT_PARENTHESIS, "Expected '(' after 'if'.");
+        expectThenNext(TokenType.LEFT_PARENTHESIS, "Expected '(' after 'IF'.");
         ParsingExpression condition = parseExpression();
         expectTokenAndEOLNext(TokenType.RIGHT_PARENTHESIS, "Expected ')' after condition.");
-        expectTokenAndEOL(TokenType.START, "Expected 'START' before code block.");
-        inControlStructure = true;
-        ParsingStatement thenBranch = parseStatement();
+        // Expect START IF EOL
+        expectThenNext(TokenType.START, "Expected 'START' before 'IF' block.");
+        expectThenNext(TokenType.IF, "Expected 'IF' after 'START'.");
+        expectThenNext(TokenType.EOL, "Expected new line after 'START IF'.");
+        List<ParsingStatement> thenStmts = parseBlockStatements();
+        // Expect END IF
+        expectThenNext(TokenType.END, "Expected 'END' to close 'IF' block.");
+        expectThenNext(TokenType.IF, "Expected 'IF' after 'END'.");
+        if (!isAtEnd()) expectThenNext(TokenType.EOL, "Expected new line after 'END IF'.");
+
+        ParsingStatement thenBranch = new ParsingStatement.Block(thenStmts);
         ParsingStatement elseBranch = null;
-        if (compareMultipleThenNext(TokenType.ELSE)) {
-            expectThenNext(TokenType.EOL, "Expected new line after if 'ELSE'.");
-            expectTokenAndEOL(TokenType.START, "Expected 'START' before code block.");
-            inControlStructure = true;
-            elseBranch = parseStatement();
+
+        if (compareCurrent(TokenType.ELSE)) {
+            next(); // consume ELSE
+            if (compareMultipleThenNext(TokenType.IF)) {
+                // ELSE IF — recurse
+                elseBranch = parseIf();
+            } else {
+                expectThenNext(TokenType.EOL, "Expected new line after 'ELSE'.");
+                expectThenNext(TokenType.START, "Expected 'START' before 'IF' block.");
+                expectThenNext(TokenType.IF, "Expected 'IF' after 'START'.");
+                expectThenNext(TokenType.EOL, "Expected new line after 'START IF'.");
+                List<ParsingStatement> elseStmts = parseBlockStatements();
+                expectThenNext(TokenType.END, "Expected 'END' to close 'IF' block.");
+                expectThenNext(TokenType.IF, "Expected 'IF' after 'END'.");
+                if (!isAtEnd()) expectThenNext(TokenType.EOL, "Expected new line after 'END IF'.");
+                elseBranch = new ParsingStatement.Block(elseStmts);
+            }
         }
 
         return new ParsingStatement.If(condition, thenBranch, elseBranch, ifToken);
     }
 
-    private ParsingStatement parseOutput() throws Exception {
-        expectThenNext(TokenType.COLON, "Expected ':' after 'OUTPUT'.");
+    private List<ParsingStatement> parseBlockStatements() throws Exception {
+        List<ParsingStatement> stmts = new ArrayList<>();
+        while (!compareCurrent(TokenType.END) && !compareCurrent(TokenType.ELSE) && !isAtEnd())
+            stmts.add(parseDeclaration());
+        return stmts;
+    }
+
+    private ParsingStatement parsePrint() throws Exception {
+        expectThenNext(TokenType.COLON, "Expected ':' after 'PRINT'.");
         ParsingExpression value = parseExpression();
         expectThenNext(TokenType.EOL, "Expected new line after expression.");
 
         return new ParsingStatement.Print(value);
     }
 
-    private ParsingStatement parseInput() throws Exception {
-        expectThenNext(TokenType.COLON, "Expected ':' after 'INPUT'.");
+    private ParsingStatement parseScan() throws Exception {
+        expectThenNext(TokenType.COLON, "Expected ':' after 'SCAN'.");
         List<ParsingExpression.Variable> variables = new ArrayList<ParsingExpression.Variable>();
         variables.add(
-                new ParsingExpression.Variable(expectThenNext(TokenType.IDENTIFIER, "Expected identifier for input")));
+                new ParsingExpression.Variable(expectThenNext(TokenType.IDENTIFIER, "Expected identifier for scan")));
         while (compareMultipleThenNext(TokenType.COMMA))
             variables.add(new ParsingExpression.Variable(
-                    expectThenNext(TokenType.IDENTIFIER, "Expected identifier for input")));
+                    expectThenNext(TokenType.IDENTIFIER, "Expected identifier for scan")));
         expectThenNext(TokenType.EOL, "Expected new line after expression.");
 
-        return new ParsingStatement.Input(variables.toArray(new ParsingExpression.Variable[0]));
+        return new ParsingStatement.Scan(variables.toArray(new ParsingExpression.Variable[0]));
     }
 
-    private ParsingStatement parseWhile() throws Exception {
-        expectThenNext(TokenType.LEFT_PARENTHESIS, "Expected '(' after 'while'.");
+    private ParsingStatement parseRepeatWhen() throws Exception {
+        expectThenNext(TokenType.WHEN, "Expected 'WHEN' after 'REPEAT'.");
+        expectThenNext(TokenType.LEFT_PARENTHESIS, "Expected '(' after 'REPEAT WHEN'.");
         ParsingExpression condition = parseExpression();
         expectTokenAndEOLNext(TokenType.RIGHT_PARENTHESIS, "Expected ')' after condition.");
-        expectTokenAndEOL(TokenType.START, "Expected 'START' before code block.");
-        inControlStructure = true;
-        ParsingStatement body = parseStatement();
+        expectThenNext(TokenType.START, "Expected 'START' before 'REPEAT' block.");
+        expectThenNext(TokenType.REPEAT, "Expected 'REPEAT' after 'START'.");
+        expectThenNext(TokenType.EOL, "Expected new line after 'START REPEAT'.");
+        List<ParsingStatement> bodyStmts = parseBlockStatements();
+        expectThenNext(TokenType.END, "Expected 'END' to close 'REPEAT' block.");
+        expectThenNext(TokenType.REPEAT, "Expected 'REPEAT' after 'END'.");
+        if (!isAtEnd()) expectThenNext(TokenType.EOL, "Expected new line after 'END REPEAT'.");
 
-        return new ParsingStatement.While(condition, body);
+        return new ParsingStatement.RepeatWhen(condition, new ParsingStatement.Block(bodyStmts));
     }
 
-    private List<ParsingStatement> parseBlock() throws Exception {
-        if (inScope && !inControlStructure)
-            throw lexerJ.newError(getPrevious(), "Nested scope is invalid.");
-        if (!inScope && scopeCounter > 0)
-            throw lexerJ.newError(getPrevious(), "Multiple scope is invalid.");
-        boolean isScope = false;
-        if (varDeclarations && !inScope) {
-            isScope = true;
-            inScope = true;
-            scopeCounter++;
-            varDeclarations = false;
-        }
-        List<ParsingStatement> statements = new ArrayList<>();
-        expectThenNext(TokenType.EOL, "Missing new line after START");
-        inControlStructure = false;
-        while (!compareCurrent(TokenType.STOP) && !isAtEnd())
-            statements.add(parseDeclaration());
-        expectTokenAndEOLNext(TokenType.STOP, "Expected 'STOP' after code block.");
-        if (isScope)
-            inScope = false;
+    private ParsingStatement parseFor() throws Exception {
+        expectThenNext(TokenType.LEFT_PARENTHESIS, "Expected '(' after 'FOR'.");
+        ParsingExpression initializer = parseExpression();
+        expectThenNext(TokenType.COMMA, "Expected ',' after FOR initializer.");
+        ParsingExpression condition = parseExpression();
+        expectThenNext(TokenType.COMMA, "Expected ',' after FOR condition.");
+        ParsingExpression increment = parseExpression();
+        expectTokenAndEOLNext(TokenType.RIGHT_PARENTHESIS, "Expected ')' after FOR clauses.");
+        expectThenNext(TokenType.START, "Expected 'START' before 'FOR' block.");
+        expectThenNext(TokenType.FOR, "Expected 'FOR' after 'START'.");
+        expectThenNext(TokenType.EOL, "Expected new line after 'START FOR'.");
+        List<ParsingStatement> bodyStmts = parseBlockStatements();
+        expectThenNext(TokenType.END, "Expected 'END' to close 'FOR' block.");
+        expectThenNext(TokenType.FOR, "Expected 'FOR' after 'END'.");
+        if (!isAtEnd()) expectThenNext(TokenType.EOL, "Expected new line after 'END FOR'.");
 
-        return statements;
+        return new ParsingStatement.For(initializer, condition, increment, new ParsingStatement.Block(bodyStmts));
     }
 
     private Object expectLogicalExpressions(ParsingExpression expectFrom) throws Exception {

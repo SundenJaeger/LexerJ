@@ -1,20 +1,23 @@
-// program        → declaration* EOF ;
+// program        → "SCRIPT" "AREA" EOL declaration* EOF ;
 // declaration    → varDecl
 //                | statement ;
-// varDecl        → "VAR" IDENTIFIER ( "=" expression )? "EOL" ;
+// varDecl        → "DECLARE" dataType IDENTIFIER ( "=" expression )? ( "," IDENTIFIER ( "=" expression )? )* "EOL" ;
 // statement      → exprStmt
 //                | printStmt
-//                | inputStmt
+//                | scanStmt
 //                | ifStmt
-//                | whileStmt
+//                | repeatStmt
+//                | forStmt
 //                | block ;
 // exprStmt       → expression "EOL" ;
-// printStmt      → "PRINT" expression "EOL" ;
-// inputStmt      → "OUTPUT" ":" expression "EOL" ;
-// ifStmt         → "IF" "(" expression ")" "START" statement "STOP"
-//                ( "ELSE" "START" statement "STOP" )? ;
-// whileStmt      → "WHILE" "(" expression ")" "START" statement "STOP" ;
-// block          → "START" declaration* "STOP" ;
+// printStmt      → "PRINT" ":" expression "EOL" ;
+// scanStmt       → "SCAN" ":" IDENTIFIER ( "," IDENTIFIER )* "EOL" ;
+// ifStmt         → "IF" "(" expression ")" EOL "START" "IF" EOL statement "END" "IF" EOL
+//                ( "ELSE" "IF" "(" expression ")" EOL "START" "IF" EOL statement "END" "IF" EOL )*
+//                ( "ELSE" EOL "START" "IF" EOL statement "END" "IF" EOL )? ;
+// repeatStmt     → "REPEAT" "WHEN" "(" expression ")" EOL "START" "REPEAT" EOL statement "END" "REPEAT" EOL ;
+// forStmt        → "FOR" "(" expression ";" expression ";" expression ")" EOL "START" "FOR" EOL statement "END" "FOR" EOL ;
+// block          → "START" "SCRIPT" EOL declaration* "END" "SCRIPT" EOL ;
 
 import java.util.List;
 
@@ -28,11 +31,13 @@ public abstract class ParsingStatement {
 
         R print(Print stmt) throws Exception;
 
-        R input(Input stmt) throws Exception;
+        R scan(Scan stmt) throws Exception;
 
         R var(Var stmt) throws Exception;
 
-        R whileS(While stmt) throws Exception;
+        R repeatWhen(RepeatWhen stmt) throws Exception;
+
+        R forS(For stmt) throws Exception;
     }
 
     static class Block extends ParsingStatement {
@@ -93,14 +98,14 @@ public abstract class ParsingStatement {
         final ParsingExpression expression;
     }
 
-    static class Input extends ParsingStatement {
-        Input(ParsingExpression.Variable[] variables) {
+    static class Scan extends ParsingStatement {
+        Scan(ParsingExpression.Variable[] variables) {
             this.variables = variables;
         }
 
         @Override
         <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.input(this);
+            return visitor.scan(this);
         }
 
         final ParsingExpression.Variable[] variables;
@@ -121,18 +126,37 @@ public abstract class ParsingStatement {
         final ParsingExpression initializer;
     }
 
-    static class While extends ParsingStatement {
-        While(ParsingExpression condition, ParsingStatement body) {
+    static class RepeatWhen extends ParsingStatement {
+        RepeatWhen(ParsingExpression condition, ParsingStatement body) {
             this.condition = condition;
             this.body = body;
         }
 
         @Override
         <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.whileS(this);
+            return visitor.repeatWhen(this);
         }
 
         final ParsingExpression condition;
+        final ParsingStatement body;
+    }
+
+    static class For extends ParsingStatement {
+        For(ParsingExpression initializer, ParsingExpression condition, ParsingExpression increment, ParsingStatement body) {
+            this.initializer = initializer;
+            this.condition = condition;
+            this.increment = increment;
+            this.body = body;
+        }
+
+        @Override
+        <R> R visit(Visitor<R> visitor) throws Exception {
+            return visitor.forS(this);
+        }
+
+        final ParsingExpression initializer;
+        final ParsingExpression condition;
+        final ParsingExpression increment;
         final ParsingStatement body;
     }
 
