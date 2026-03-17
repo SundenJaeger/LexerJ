@@ -1,8 +1,7 @@
 import java.util.List;
 import java.util.Scanner;
 
-class Interpreter implements ParsingExpression.Visitor<Object>,
-        ParsingStatement.Visitor<Void> {
+class Interpreter implements ParsingExpression.Visitor<Object>, ParsingStatement.Visitor<Void> {
     private final LexerJ lexerJ;
     private final Storage global = new Storage();
 
@@ -20,11 +19,13 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
         Object left = evaluate(expr.left);
         try {
             if (expr.operator.type == TokenType.OR) {
-                if (toBoolean(left))
+                if (toBoolean(left)) {
                     return left;
+                }
             } else {
-                if (!toBoolean(left))
+                if (!toBoolean(left)) {
                     return left;
+                }
             }
         } catch (Exception e) {
             throw lexerJ.newError(expr.operator, e.getMessage());
@@ -37,36 +38,41 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
     public Object unary(ParsingExpression.Unary expr) throws Exception {
         Object right = evaluate(expr.right);
         switch (expr.operator.type) {
-            case NOT:
+            case NOT -> {
                 try {
                     return !toBoolean(right);
                 } catch (Exception e) {
                     throw lexerJ.newError(expr.operator, e.getMessage());
                 }
-            case ADDITION:
+            }
+            case ADDITION -> {
                 checkNumberOperand(expr.operator, right);
-                if (right instanceof Double)
+                if (right instanceof Double) {
                     return right;
-                if (right instanceof Integer)
+                }
+                if (right instanceof Integer) {
                     return right;
-                break;
-            case SUBTRACTION:
+                }
+            }
+            case SUBTRACTION -> {
                 checkNumberOperand(expr.operator, right);
-                if (right instanceof Double)
+                if (right instanceof Double) {
                     return -(double) right;
-                if (right instanceof Integer)
+                }
+                if (right instanceof Integer) {
                     return -(int) right;
-                break;
-            default:
-                throw lexerJ.newError(expr.operator, "Invalid unary operator.");
+                }
+            }
+            default -> throw lexerJ.newError(expr.operator, "Invalid unary operator.");
         }
 
         return null;
     }
 
     private boolean toBoolean(Object object) throws Exception {
-        if (object instanceof Boolean)
+        if (object instanceof Boolean) {
             return (boolean) object;
+        }
 
         throw new Exception("Operand must be a boolean.");
     }
@@ -77,10 +83,12 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
     }
 
     private boolean isEqual(Object a, Object b) {
-        if (a == null && b == null)
+        if (a == null && b == null) {
             return true;
-        if (a == null)
+        }
+        if (a == null) {
             return false;
+        }
 
         return a.equals(b);
     }
@@ -121,10 +129,11 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
     public Void ifS(ParsingStatement.If stmt) throws Exception {
         Object condition = evaluate(stmt.condition);
         try {
-            if (toBoolean(condition))
+            if (toBoolean(condition)) {
                 execute(stmt.thenBranch);
-            else if (stmt.elseBranch != null)
+            } else if (stmt.elseBranch != null) {
                 execute(stmt.elseBranch);
+            }
         } catch (Exception e) {
             throw lexerJ.newError(stmt.ifToken, e.getMessage());
         }
@@ -141,7 +150,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
     }
 
     @Override
-    public Void input(ParsingStatement.Input stmt) throws Exception {
+    public Void scan(ParsingStatement.Scan stmt) throws Exception {
         Scanner scanner = new Scanner(System.in);
         int x = 0;
         for (ParsingExpression.Variable v : stmt.variables) {
@@ -156,12 +165,14 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     case "java.lang.Double" -> global.assign(v.name, (double) scanner.nextDouble());
                     case "java.lang.Integer" -> global.assign(v.name, (int) scanner.nextInt());
                     case "java.lang.Boolean" -> {
-                        if (x > 0)
+                        if (x > 0) {
                             scanner.nextLine();
+                        }
                         String input = scanner.nextLine();
                         boolean belongs = input.equals("TRUE") || input.equals("FALSE");
-                        if (!belongs)
+                        if (!belongs) {
                             throw new Exception();
+                        }
                         global.assign(v.name, input.equals("TRUE"));
                     }
                     default -> throw new Exception();
@@ -180,17 +191,30 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
     @Override
     public Void var(ParsingStatement.Var stmt) throws Exception {
         Object value = null;
-        if (stmt.initializer != null)
+        if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
+        }
         global.define(stmt.name.lexeme, value);
 
         return null;
     }
 
     @Override
-    public Void whileS(ParsingStatement.While stmt) throws Exception {
-        while (toBoolean(evaluate(stmt.condition)))
+    public Void repeatWhen(ParsingStatement.RepeatWhen stmt) throws Exception {
+        while (toBoolean(evaluate(stmt.condition))) {
             execute(stmt.body);
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void forS(ParsingStatement.For stmt) throws Exception {
+        evaluate(stmt.initializer);
+        while (toBoolean(evaluate(stmt.condition))) {
+            execute(stmt.body);
+            evaluate(stmt.increment);
+        }
 
         return null;
     }
@@ -199,8 +223,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
     public Object assign(ParsingExpression.Assign expr) throws Exception {
         Object value = evaluate(expr.value);
         if (expr.type == TokenType.FLOAT && Token.checkType(value, TokenType.INT)) {
-            double x = Double.parseDouble(value.toString());
-            value = x;
+            value = Double.parseDouble(value.toString());
         }
         if (!Token.checkType(value, expr.type))
             throw lexerJ.newError(expr.name, String.format("Expected expression value as '%s'.", expr.type));
@@ -213,8 +236,9 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
     public Object binary(ParsingExpression.Binary expr) throws Exception {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
+
         switch (expr.operator.type) {
-            case GREATER:
+            case GREATER -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double v4 when right instanceof Double -> {
@@ -232,7 +256,8 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case GREATER_EQUAL:
+            }
+            case GREATER_EQUAL -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double v3 when right instanceof Double -> {
@@ -250,7 +275,8 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case LESSER:
+            }
+            case LESSER -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double v2 when right instanceof Double -> {
@@ -268,7 +294,8 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case LESSER_EQUAL:
+            }
+            case LESSER_EQUAL -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double v1 when right instanceof Double -> {
@@ -286,11 +313,14 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case NOT_EQUAL:
+            }
+            case NOT_EQUAL -> {
                 return !isEqual(left, right);
-            case EQUAL:
+            }
+            case EQUAL -> {
                 return isEqual(left, right);
-            case SUBTRACTION:
+            }
+            case SUBTRACTION -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double aDouble when right instanceof Double -> {
@@ -308,7 +338,8 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case ADDITION:
+            }
+            case ADDITION -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double v when right instanceof Double -> {
@@ -326,7 +357,8 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case DIVISION:
+            }
+            case DIVISION -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double v when right instanceof Double -> {
@@ -344,7 +376,8 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case MULTIPLICATION:
+            }
+            case MULTIPLICATION -> {
                 checkNumberOperands(expr.operator, left, right);
                 switch (left) {
                     case Double v when right instanceof Double -> {
@@ -362,44 +395,51 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     default -> {
                     }
                 }
-            case MODULO:
-                if (left instanceof Integer && right instanceof Integer)
+            }
+            case MODULO -> {
+                if (left instanceof Integer && right instanceof Integer) {
                     return (int) left % (int) right;
-                else
+                } else {
                     throw lexerJ.newError(expr.operator, "Operand must be an integer.");
-            case AMPERSAND:
+                }
+            }
+            case AMPERSAND -> {
                 return stringify(left) + stringify(right);
-            default:
-                throw lexerJ.newError(expr.operator, "Invalid binary operator.");
+            }
+            default -> throw lexerJ.newError(expr.operator, "Invalid binary operator.");
         }
+        return null;
     }
 
     private void checkNumberOperand(Token operator, Object operand) throws Exception {
-        if (operand instanceof Double || operand instanceof Integer)
+        if (operand instanceof Double || operand instanceof Integer) {
             return;
+        }
 
         throw lexerJ.newError(operator, "Operand must be a number.");
     }
 
-    private void checkNumberOperands(Token operator,
-                                     Object left, Object right) throws Exception {
-        if ((left instanceof Double || left instanceof Integer)
-                && (right instanceof Double || right instanceof Integer))
+    private void checkNumberOperands(Token operator, Object left, Object right) throws Exception {
+        if ((left instanceof Double || left instanceof Integer) && (right instanceof Double || right instanceof Integer)) {
             return;
+        }
 
         throw lexerJ.newError(operator, "Operand must be a number.");
     }
 
     void interpret(List<ParsingStatement> statements) throws Exception {
-        for (ParsingStatement statement : statements)
+        for (ParsingStatement statement : statements) {
             execute(statement);
+        }
     }
 
     private String stringify(Object object) {
-        if (object == null)
+        if (object == null) {
             return "null";
-        if ("java.lang.Boolean".equals(object.getClass().getName()))
+        }
+        if ("java.lang.Boolean".equals(object.getClass().getName())) {
             return object.toString().toUpperCase();
+        }
 
         return object.toString();
     }
