@@ -9,14 +9,14 @@ public class Parser {
     boolean inControlStructure = false;
     boolean inScope = false;
     int scopeCounter = 0;
-    CFPL cfpl;
+    LexerJ lexerJ;
     private List<Token> tokens;
     private int current = 0;
     List<ParsingStatement> statements = new ArrayList<>();
     private final Map<String, TokenType> variablesType = new HashMap<String, TokenType>();
 
-    public Parser(CFPL cfpl) {
-        this.cfpl = cfpl;
+    public Parser(LexerJ lexerJ) {
+        this.lexerJ = lexerJ;
     }
 
     private ParsingExpression.Literal getDefaultLiteral(TokenType type) {
@@ -50,14 +50,14 @@ public class Parser {
         if (!isDeclaring)
             isDeclaring = true;
         if (!varDeclarations)
-            throw cfpl.newError(getPrevious(), "Misplaced variable declaration.");
+            throw lexerJ.newError(getPrevious(), "Misplaced variable declaration.");
         Token name;
         if (compareCurrent(TokenType.IDENTIFIER))
             name = expectThenNext(TokenType.IDENTIFIER, "Expected variable name.");
         else if (Token.reservedWords.containsKey(getCurrent().lexeme))
-            throw cfpl.newError(getCurrent(), "Expected valid variable name but got reserved keyword.");
+            throw lexerJ.newError(getCurrent(), "Expected valid variable name but got reserved keyword.");
         else
-            throw cfpl.newError(getCurrent(), "Expected valid variable name.");
+            throw lexerJ.newError(getCurrent(), "Expected valid variable name.");
         TokenType type;
 
         int tempCurrent = current;
@@ -66,7 +66,7 @@ public class Parser {
         if (compareMultipleThenNext(TokenType.BOOL, TokenType.CHAR, TokenType.FLOAT, TokenType.INT))
             type = getPrevious().type;
         else
-            throw cfpl.newError(name, "Expected declaration variable data type.");
+            throw lexerJ.newError(name, "Expected declaration variable data type.");
         current = tempCurrent;
 
         ParsingExpression initializer = null;
@@ -77,7 +77,7 @@ public class Parser {
                     double x = Double.parseDouble(initial.value.toString());
                     initializer = new ParsingExpression.Literal(x);
                 } else if (!Token.checkType(initial.value, type))
-                    throw cfpl.newError(name, String.format("Expected '%s' type.", type));
+                    throw lexerJ.newError(name, String.format("Expected '%s' type.", type));
             }
         } else
             initializer = getDefaultLiteral(type);
@@ -87,7 +87,7 @@ public class Parser {
         if (!variablesType.containsKey(name.lexeme))
             variablesType.put(name.lexeme, type);
         else
-            throw cfpl.newError(name, String.format("Variable name '%s' is already declared.", name.lexeme));
+            throw lexerJ.newError(name, String.format("Variable name '%s' is already declared.", name.lexeme));
 
         boolean manyDeclaration = false;
         while (compareMultipleThenNext(TokenType.COMMA)) {
@@ -103,20 +103,20 @@ public class Parser {
                         double x = Double.parseDouble(initial.value.toString());
                         initializer = new ParsingExpression.Literal(x);
                     } else if (!Token.checkType(initial.value, type))
-                        throw cfpl.newError(name, String.format("Expected '%s' type.", type));
+                        throw lexerJ.newError(name, String.format("Expected '%s' type.", type));
                 }
             } else
                 initializer = getDefaultLiteral(type);
             if (!variablesType.containsKey(name.lexeme))
                 variablesType.put(name.lexeme, type);
             else
-                throw cfpl.newError(name, String.format("Variable name '%s' is already declared.", name.lexeme));
+                throw lexerJ.newError(name, String.format("Variable name '%s' is already declared.", name.lexeme));
             statements.add(new ParsingStatement.Var(name, initializer));
         }
 
         if (expectThenNext(TokenType.AS, "Expected declaration variable data type.") != null
                 && !compareMultipleThenNext(TokenType.BOOL, TokenType.CHAR, TokenType.FLOAT, TokenType.INT))
-            throw cfpl.newError(name, "Expected declaration variable data type.");
+            throw lexerJ.newError(name, "Expected declaration variable data type.");
         expectThenNext(TokenType.EOL, "Expected new line after declaration.");
         if (isDeclaring)
             isDeclaring = false;
@@ -131,7 +131,7 @@ public class Parser {
         if (compareMultipleThenNext(TokenType.START))
             return new ParsingStatement.Block(parseBlock());
         if (!inScope)
-            throw cfpl.newError(getCurrent(), "Statement is out of scope.");
+            throw lexerJ.newError(getCurrent(), "Statement is out of scope.");
         if (compareMultipleThenNext(TokenType.IF))
             return parseIf();
         if (compareMultipleThenNext(TokenType.OUTPUT))
@@ -146,7 +146,7 @@ public class Parser {
 
     private ParsingStatement parseExpressionStatement() throws Exception {
         if (!inScope && !isDeclaring)
-            throw cfpl.newError(getCurrent(), "Out of scope expression is only allowed in variable declaration.");
+            throw lexerJ.newError(getCurrent(), "Out of scope expression is only allowed in variable declaration.");
         ParsingExpression expr = parseExpression();
         expectThenNext(TokenType.EOL, "Expected new line after expression.");
 
@@ -168,13 +168,13 @@ public class Parser {
                 type = variablesType.get(name.lexeme);
                 if (value instanceof ParsingExpression.Literal
                         && !Token.checkType(((ParsingExpression.Literal) value).value, type))
-                    throw cfpl.newError(name, String.format("Expected '%s' type.", type));
+                    throw lexerJ.newError(name, String.format("Expected '%s' type.", type));
                 return new ParsingExpression.Assign(name, value, type);
             }
-            throw cfpl.newError(equals, "Invalid assignment target.");
+            throw lexerJ.newError(equals, "Invalid assignment target.");
         } else if (compareMultipleThenNext(TokenType.BOOL_LIT, TokenType.CHAR_LIT, TokenType.FLOAT_LIT,
                 TokenType.INT_LIT, TokenType.STR_LIT, TokenType.IDENTIFIER)) {
-            throw cfpl.newError(getPrevious(), "Missing expression operator.");
+            throw lexerJ.newError(getPrevious(), "Missing expression operator.");
         }
 
         return expr;
@@ -278,7 +278,7 @@ public class Parser {
             return new ParsingExpression.Literal(getPrevious().literal);
         if (compareMultipleThenNext(TokenType.IDENTIFIER)) {
             if (!varDeclarations && !variablesType.containsKey(getPrevious().lexeme))
-                throw cfpl.newError(getPrevious(), String.format("Undefined variable '%s'.", getPrevious().lexeme));
+                throw lexerJ.newError(getPrevious(), String.format("Undefined variable '%s'.", getPrevious().lexeme));
             return new ParsingExpression.Variable(getPrevious());
         }
         if (compareMultipleThenNext(TokenType.LEFT_PARENTHESIS)) {
@@ -287,7 +287,7 @@ public class Parser {
             return new ParsingExpression.Grouping(expr);
         }
 
-        throw cfpl.newError(getCurrent(), "Expected expression.");
+        throw lexerJ.newError(getCurrent(), "Expected expression.");
     }
 
     private ParsingStatement parseIf() throws Exception {
@@ -343,9 +343,9 @@ public class Parser {
 
     private List<ParsingStatement> parseBlock() throws Exception {
         if (inScope && !inControlStructure)
-            throw cfpl.newError(getPrevious(), "Nested scope is invalid.");
+            throw lexerJ.newError(getPrevious(), "Nested scope is invalid.");
         if (!inScope && scopeCounter > 0)
-            throw cfpl.newError(getPrevious(), "Multiple scope is invalid.");
+            throw lexerJ.newError(getPrevious(), "Multiple scope is invalid.");
         boolean isScope = false;
         if (varDeclarations && !inScope) {
             isScope = true;
@@ -393,7 +393,7 @@ public class Parser {
             } else
                 throw new Exception();
         } catch (Exception e) {
-            throw cfpl.newError(erroneous, String.format("Expected '%s' evaluation result.", type));
+            throw lexerJ.newError(erroneous, String.format("Expected '%s' evaluation result.", type));
         }
         return null;
     }
@@ -414,7 +414,7 @@ public class Parser {
         if (compareCurrent(type))
             return next();
 
-        throw cfpl.newError(getCurrent(), message);
+        throw lexerJ.newError(getCurrent(), message);
     }
 
     private boolean compareMultipleThenNext(TokenType... types) {

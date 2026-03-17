@@ -4,13 +4,13 @@ import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class CFPL {
+public class LexerJ {
     private Lexer lexer;
     private Parser parser;
     private Interpreter interpret;
     private final StringBuilder sourceCode = new StringBuilder();
 
-    public CFPL(String filePath) {
+    public LexerJ(String filePath) {
         File file = new File(filePath);
 
         try (BufferedReader br = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {

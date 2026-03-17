@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Stack;
 
 public class Lexer {
-    private CFPL cfpl;
+    private LexerJ lexerJ;
     private String sourceCode;
     private List<Token> tokens = new ArrayList<Token>();
     private Stack<Token> codeBlock = new Stack<Token>();
@@ -12,9 +12,9 @@ public class Lexer {
     private int column = 0;
     boolean firstInLine = true;
 
-    public Lexer(CFPL cfpl) {
-        this.cfpl = cfpl;
-        this.sourceCode = cfpl.getSourceCode();
+    public Lexer(LexerJ lexerJ) {
+        this.lexerJ = lexerJ;
+        this.sourceCode = lexerJ.getSourceCode();
     }
 
     public List<Token> getTokens() {
@@ -127,14 +127,14 @@ public class Lexer {
                             i = index;
                             break;
                         }
-                        throw cfpl.newError(line, column, Character.toString(current), "Invalid character.");
+                        throw lexerJ.newError(line, column, Character.toString(current), "Invalid character.");
                 }
                 firstInLine = false;
             }
         }
         tokens.add(new Token(TokenType.EOF, "EOF", null, line, column));
         if (!codeBlock.isEmpty())
-            throw cfpl.newError(line, column, "START", "'START' is missing 'STOP'");
+            throw lexerJ.newError(line, column, "START", "'START' is missing 'STOP'");
         return tokens;
     }
 
@@ -205,7 +205,7 @@ public class Lexer {
             tokens.add(new Token(TokenType.CHAR_LIT, Character.toString(current), current, line, column));
             current = sourceCode.charAt(++i);
             if (!Quotation.equalsSingleQuote(current))
-                throw cfpl.newError(line, column, sourceCode.substring(i - 1, i + 1), "Invalid char literal.");
+                throw lexerJ.newError(line, column, sourceCode.substring(i - 1, i + 1), "Invalid char literal.");
             return i;
         }
         ++i;
@@ -217,7 +217,7 @@ public class Lexer {
             return ++i;
         }
 
-        throw cfpl.newError(line, column, sourceCode.substring(i - 1, i + 1), "Invalid char literal.");
+        throw lexerJ.newError(line, column, sourceCode.substring(i - 1, i + 1), "Invalid char literal.");
     }
 
     private int[] evaluateDFA(
@@ -307,7 +307,7 @@ public class Lexer {
         };
         int[] result = evaluateDFA(++i, 0, finalState, deadState, charStateTransitionTable, charToIndex, true);
         if (result[0] == 1)
-            throw cfpl.newError(line, column, sourceCode.substring(i, result[2]), "Unclosed bool literal.");
+            throw lexerJ.newError(line, column, sourceCode.substring(i, result[2]), "Unclosed bool literal.");
         if (finalState.contains(result[1])) {
             String boolLexeme = sourceCode.substring(i, result[2]);
             tokens.add(new Token(TokenType.BOOL_LIT, boolLexeme, stringToBool(boolLexeme), line, column));
@@ -354,9 +354,9 @@ public class Lexer {
         int[] result = evaluateDFA(i, 0, finalState, deadState, charStateTransitionTable, charToIndex, false);
         String res = sourceCode.substring(i, result[2] + 1);
         if (result[0] == 1)
-            throw cfpl.newError(line, column, res, "Unclosed string literal.");
+            throw lexerJ.newError(line, column, res, "Unclosed string literal.");
         if (deadState.contains(result[1])) {
-            throw cfpl.newError(line, column, res, "Invalid escape.");
+            throw lexerJ.newError(line, column, res, "Invalid escape.");
         }
         returnIndex = result[2];
         return returnIndex;
@@ -446,7 +446,7 @@ public class Lexer {
             result[2] = '\n';
         } else if (current == '\\') {
             if (sourceCode.charAt(++i) == 'n')
-                throw cfpl.newError(line, column, sourceCode.substring(i - 1, i + 1), "Invalid new line character.");
+                throw lexerJ.newError(line, column, sourceCode.substring(i - 1, i + 1), "Invalid new line character.");
             result[2] = unescapeJavaString(String.format("\\%c", sourceCode.charAt(i))).charAt(0);
         } else {
             result[0] = -1;
@@ -480,7 +480,7 @@ public class Lexer {
                 literal.append(current);
         }
         if (i >= sourceCode.length()) {
-            throw cfpl.newError(result[0] == 1 ? startLine : line, result[0] == 1 ? startColumn : column,
+            throw lexerJ.newError(result[0] == 1 ? startLine : line, result[0] == 1 ? startColumn : column,
                     Character.toString(sourceCode.charAt(startIndex)), "Unclosed string literal.");
         }
         tokens.add(new Token(TokenType.STR_LIT, literal.toString(), literal.toString(), line, column));
@@ -522,9 +522,9 @@ public class Lexer {
         int[] result = evaluateDFA(i, 0, finalState, deadState, charStateTransitionTable, charToIndex, true);
         String res = sourceCode.substring(i, result[2] + 1);
         if (result[0] == 1)
-            throw cfpl.newError(line, column, res, "Unclosed code block.");
+            throw lexerJ.newError(line, column, res, "Unclosed code block.");
         if (deadState.contains(result[1]))
-            throw cfpl.newError(line, column, res, "Invalid number literal.");
+            throw lexerJ.newError(line, column, res, "Invalid number literal.");
         if (result[1] == 1) {
             tokens.add(new Token(TokenType.INT_LIT, res, Integer.parseInt(res), line, column));
             returnIndex = result[2];
@@ -568,7 +568,7 @@ public class Lexer {
         int[] result = evaluateDFA(i, 0, finalState, deadState, charStateTransitionTable, charToIndex, true);
         String res = sourceCode.substring(i, result[2] + 1);
         if (result[0] == 1)
-            throw cfpl.newError(line, column, res, "Invalid syntax.");
+            throw lexerJ.newError(line, column, res, "Invalid syntax.");
         if (finalState.contains(result[1])) {
             Token temp;
             if (Token.reservedWords.containsKey(res)) {
@@ -579,7 +579,7 @@ public class Lexer {
                         break;
                     case STOP:
                         if (codeBlock.isEmpty())
-                            throw cfpl.newError(line, column, "STOP", "'STOP' is missing 'START'");
+                            throw lexerJ.newError(line, column, "STOP", "'STOP' is missing 'START'");
                         codeBlock.pop();
                         break;
                     default:

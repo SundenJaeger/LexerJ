@@ -3,11 +3,11 @@ import java.util.Scanner;
 
 class Interpreter implements ParsingExpression.Visitor<Object>,
         ParsingStatement.Visitor<Void> {
-    private final CFPL cfpl;
+    private final LexerJ lexerJ;
     private final Storage global = new Storage();
 
-    public Interpreter(CFPL cfpl) {
-        this.cfpl = cfpl;
+    public Interpreter(LexerJ lexerJ) {
+        this.lexerJ = lexerJ;
     }
 
     @Override
@@ -27,7 +27,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     return left;
             }
         } catch (Exception e) {
-            throw cfpl.newError(expr.operator, e.getMessage());
+            throw lexerJ.newError(expr.operator, e.getMessage());
         }
 
         return evaluate(expr.right);
@@ -41,7 +41,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                 try {
                     return !toBoolean(right);
                 } catch (Exception e) {
-                    throw cfpl.newError(expr.operator, e.getMessage());
+                    throw lexerJ.newError(expr.operator, e.getMessage());
                 }
             case ADDITION:
                 checkNumberOperand(expr.operator, right);
@@ -58,7 +58,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                     return -(int) right;
                 break;
             default:
-                throw cfpl.newError(expr.operator, "Invalid unary operator.");
+                throw lexerJ.newError(expr.operator, "Invalid unary operator.");
         }
 
         return null;
@@ -126,7 +126,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
             else if (stmt.elseBranch != null)
                 execute(stmt.elseBranch);
         } catch (Exception e) {
-            throw cfpl.newError(stmt.ifToken, e.getMessage());
+            throw lexerJ.newError(stmt.ifToken, e.getMessage());
         }
 
         return null;
@@ -168,7 +168,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                 }
             } catch (Exception e) {
                 scanner.close();
-                throw cfpl.newError(v.name, "Unsupported input data type.");
+                throw lexerJ.newError(v.name, "Unsupported input data type.");
             }
             x++;
         }
@@ -203,7 +203,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
             value = x;
         }
         if (!Token.checkType(value, expr.type))
-            throw cfpl.newError(expr.name, String.format("Expected expression value as '%s'.", expr.type));
+            throw lexerJ.newError(expr.name, String.format("Expected expression value as '%s'.", expr.type));
         global.assign(expr.name, value);
 
         return value;
@@ -366,11 +366,11 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                 if (left instanceof Integer && right instanceof Integer)
                     return (int) left % (int) right;
                 else
-                    throw cfpl.newError(expr.operator, "Operand must be an integer.");
+                    throw lexerJ.newError(expr.operator, "Operand must be an integer.");
             case AMPERSAND:
                 return stringify(left) + stringify(right);
             default:
-                throw cfpl.newError(expr.operator, "Invalid binary operator.");
+                throw lexerJ.newError(expr.operator, "Invalid binary operator.");
         }
     }
 
@@ -378,7 +378,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
         if (operand instanceof Double || operand instanceof Integer)
             return;
 
-        throw cfpl.newError(operator, "Operand must be a number.");
+        throw lexerJ.newError(operator, "Operand must be a number.");
     }
 
     private void checkNumberOperands(Token operator,
@@ -387,7 +387,7 @@ class Interpreter implements ParsingExpression.Visitor<Object>,
                 && (right instanceof Double || right instanceof Integer))
             return;
 
-        throw cfpl.newError(operator, "Operand must be a number.");
+        throw lexerJ.newError(operator, "Operand must be a number.");
     }
 
     void interpret(List<ParsingStatement> statements) throws Exception {

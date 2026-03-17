@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="LexerJ:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/LexerJ_jar</output-path>
+    <root id="archive" name="LexerJ.jar">
+      <element id="module-output" name="LexerJ" />
+    </root>
+  </artifact>
+</component>

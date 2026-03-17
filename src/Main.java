@@ -1,9 +1,18 @@
-void main(String[] args) {
-    if (args.length < 1) {
-        System.err.println("Usage: CFPL <file path>");
-        return;
-    }
+import java.util.Scanner;
 
-    CFPL cfpl = new CFPL(args[0]);
-    cfpl.execute();
+public class Main {
+    static void main(String[] args) {
+        if (args.length < 1) {
+            System.err.println("Usage: <file path>");
+            return;
+        }
+
+        Scanner scanner = new Scanner(System.in);
+
+        LexerJ lexerJ = new LexerJ(args[0]);
+        lexerJ.execute();
+
+        System.out.println("Press any key to continue...");
+        scanner.nextLine();
+    }
 }
