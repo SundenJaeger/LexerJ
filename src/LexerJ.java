@@ -35,11 +35,13 @@ public class LexerJ {
         int line = 0;
         for (int i = 0; i < sourceCode.length(); i++) {
             if (sourceCode.charAt(i) == '\n') {
-                if (line > 0)
+                if (line > 0) {
                     start = end + 1;
+                }
                 end = i;
-                if (line == lineNumber)
+                if (line == lineNumber) {
                     break;
+                }
                 line++;
             }
         }

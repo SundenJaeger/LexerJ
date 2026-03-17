@@ -36,70 +36,56 @@ public class Lexer {
             }
             if (!Character.isWhitespace(current)) {
                 switch (current) {
-                    case '(':
-                        tokens.add(
-                                new Token(TokenType.LEFT_PARENTHESIS, Character.toString(current), null, line, column));
-                        break;
-                    case ')':
-                        tokens.add(new Token(TokenType.RIGHT_PARENTHESIS, Character.toString(current), null, line,
-                                column));
-                        break;
-                    case '[':
-                        tokens.add(new Token(TokenType.LEFT_BRACE, Character.toString(current), null, line, column));
-                        break;
-                    case ']':
-                        tokens.add(new Token(TokenType.RIGHT_BRACE, Character.toString(current), null, line, column));
-                        break;
-                    case ',':
-                        tokens.add(new Token(TokenType.COMMA, Character.toString(current), null, line, column));
-                        break;
-                    case ':':
-                        tokens.add(new Token(TokenType.COLON, Character.toString(current), null, line, column));
-                        break;
-                    case '#':
-                        tokens.add(new Token(TokenType.OCTOTHORPE, Character.toString(current), null, line, column));
-                        break;
-                    case '&':
-                        tokens.add(new Token(TokenType.AMPERSAND, Character.toString(current), null, line, column));
-                        break;
-                    case '+':
-                        tokens.add(new Token(TokenType.ADDITION, Character.toString(current), null, line, column));
-                        break;
-                    case '-':
-                        tokens.add(new Token(TokenType.SUBTRACTION, Character.toString(current), null, line, column));
-                        break;
-                    case '*':
-                        if (firstInLine) {
+                    case '(' ->
+                            tokens.add(new Token(TokenType.LEFT_PARENTHESIS, Character.toString(current), null, line, column));
+                    case ')' ->
+                            tokens.add(new Token(TokenType.RIGHT_PARENTHESIS, Character.toString(current), null, line, column));
+                    case '[' ->
+                            tokens.add(new Token(TokenType.LEFT_BRACE, Character.toString(current), null, line, column));
+                    case ']' ->
+                            tokens.add(new Token(TokenType.RIGHT_BRACE, Character.toString(current), null, line, column));
+                    case ',' -> tokens.add(new Token(TokenType.COMMA, Character.toString(current), null, line, column));
+                    case ':' -> tokens.add(new Token(TokenType.COLON, Character.toString(current), null, line, column));
+                    case '#' ->
+                            tokens.add(new Token(TokenType.OCTOTHORPE, Character.toString(current), null, line, column));
+                    case '&' ->
+                            tokens.add(new Token(TokenType.AMPERSAND, Character.toString(current), null, line, column));
+                    case '$' ->
+                            tokens.add(new Token(TokenType.DOLLAR, Character.toString(current), null, line, column));
+                    case '+' ->
+                            tokens.add(new Token(TokenType.ADDITION, Character.toString(current), null, line, column));
+                    case '-' ->
+                            tokens.add(new Token(TokenType.SUBTRACTION, Character.toString(current), null, line, column));
+                    case '*' ->
+                            tokens.add(new Token(TokenType.MULTIPLICATION, Character.toString(current), null, line, column));
+                    case '/' ->
+                            tokens.add(new Token(TokenType.DIVISION, Character.toString(current), null, line, column));
+                    case '%' -> {
+                        // E check ang comment %%
+                        if (i + 1 < sourceCode.length() && sourceCode.charAt(i + 1) == '%') {
                             index = comment(i);
                             column += index - i;
                             i = index;
                             continue;
                         }
-                        tokens.add(
-                                new Token(TokenType.MULTIPLICATION, Character.toString(current), null, line, column));
-                        break;
-                    case '/':
-                        tokens.add(new Token(TokenType.DIVISION, Character.toString(current), null, line, column));
-                        break;
-                    case '%':
                         tokens.add(new Token(TokenType.MODULO, Character.toString(current), null, line, column));
-                        break;
-                    case '=':
+                    }
+                    case '=' -> {
                         index = assign_equal(i);
                         column += index - i;
                         i = index;
-                        break;
-                    case '<':
+                    }
+                    case '<' -> {
                         index = lesser_equal_nequal(i);
                         column += index - i;
                         i = index;
-                        break;
-                    case '>':
+                    }
+                    case '>' -> {
                         index = greater_equal(i);
                         column += index - i;
                         i = index;
-                        break;
-                    default:
+                    }
+                    default -> {
                         if (Quotation.equalsSingleQuote(current)) {
                             index = character_literal(i);
                             column += index - i;
@@ -121,20 +107,21 @@ public class Lexer {
                             column += index - i;
                             i = index;
                             break;
-                        } else if (current == '_' || current == '$' || Character.isAlphabetic(current)) {
+                        } else if (current == '_' || Character.isAlphabetic(current)) {
                             index = words(i);
                             column += index - i;
                             i = index;
                             break;
                         }
                         throw lexerJ.newError(line, column, Character.toString(current), "Invalid character.");
+                    }
                 }
                 firstInLine = false;
             }
         }
         tokens.add(new Token(TokenType.EOF, "EOF", null, line, column));
         if (!codeBlock.isEmpty())
-            throw lexerJ.newError(line, column, "START", "'START' is missing 'STOP'");
+            throw lexerJ.newError(line, column, "START", "'START' is missing 'END'");
         return tokens;
     }
 
@@ -238,7 +225,7 @@ public class Lexer {
             currentState = charStateTransitionTable[currentState][characterIndex];
             currentIndex++;
         }
-        return new int[]{ currentIndex == sourceCode.length() ? 1 : 0, currentState, currentIndex - 1 };
+        return new int[]{currentIndex == sourceCode.length() ? 1 : 0, currentState, currentIndex - 1};
     }
 
     private boolean stringToBool(String lexeme) {
@@ -249,59 +236,39 @@ public class Lexer {
         int returnIndex = i;
         int[][] charStateTransitionTable = {
                 // F, A, L, S, E, T, R, U, "
-                { 1, 9, 9, 9, 9, 7, 9, 9, 9 }, // 0
-                { 9, 2, 9, 9, 9, 9, 9, 9, 9 }, // 1
-                { 9, 9, 3, 9, 9, 9, 9, 9, 9 }, // 2
-                { 9, 9, 9, 4, 9, 9, 9, 9, 9 }, // 3
-                { 9, 9, 9, 9, 5, 9, 9, 9, 9 }, // 4
-                { 9, 9, 9, 9, 9, 9, 9, 9, 6 }, // 5
-                { 6, 6, 6, 6, 6, 6, 6, 6, 6 }, // 6
-                { 9, 9, 9, 9, 9, 9, 8, 9, 9 }, // 7
-                { 9, 9, 9, 9, 9, 9, 9, 4, 9 }, // 8
-                { 9, 9, 9, 9, 9, 9, 9, 9, 9 }, // 9
+                {1, 9, 9, 9, 9, 7, 9, 9, 9}, // 0
+                {9, 2, 9, 9, 9, 9, 9, 9, 9}, // 1
+                {9, 9, 3, 9, 9, 9, 9, 9, 9}, // 2
+                {9, 9, 9, 4, 9, 9, 9, 9, 9}, // 3
+                {9, 9, 9, 9, 5, 9, 9, 9, 9}, // 4
+                {9, 9, 9, 9, 9, 9, 9, 9, 6}, // 5
+                {6, 6, 6, 6, 6, 6, 6, 6, 6}, // 6
+                {9, 9, 9, 9, 9, 9, 8, 9, 9}, // 7
+                {9, 9, 9, 9, 9, 9, 9, 4, 9}, // 8
+                {9, 9, 9, 9, 9, 9, 9, 9, 9}, // 9
         };
-        HashSet<Integer> finalState = new HashSet<Integer>() {
-            {
-                add(6);
-            }
-        };
-        HashSet<Integer> deadState = new HashSet<Integer>() {
-            {
-                add(9);
-            }
-        };
+        HashSet<Integer> finalState = new HashSet<>();
+        finalState.add(6);
+
+        HashSet<Integer> deadState = new HashSet<>();
+        finalState.add(9);
+
         CharacterToIndexFunction charToIndex = (character) -> {
             int translated = -1;
             switch (character) {
-                case 'F':
-                    translated = 0;
-                    break;
-                case 'A':
-                    translated = 1;
-                    break;
-                case 'L':
-                    translated = 2;
-                    break;
-                case 'S':
-                    translated = 3;
-                    break;
-                case 'E':
-                    translated = 4;
-                    break;
-                case 'T':
-                    translated = 5;
-                    break;
-                case 'R':
-                    translated = 6;
-                    break;
-                case 'U':
-                    translated = 7;
-                    break;
-                default:
+                case 'F' -> translated = 0;
+                case 'A' -> translated = 1;
+                case 'L' -> translated = 2;
+                case 'S' -> translated = 3;
+                case 'E' -> translated = 4;
+                case 'T' -> translated = 5;
+                case 'R' -> translated = 6;
+                case 'U' -> translated = 7;
+                default -> {
                     if (Quotation.equalsDoubleQuote(character)) {
                         translated = 8;
-                        break;
                     }
+                }
             }
             return translated;
         };
@@ -320,34 +287,25 @@ public class Lexer {
         int returnIndex = i;
         int[][] charStateTransitionTable = {
                 // [, *, ]
-                { 1, 4, 4 }, // 0
-                { 2, 2, 2 }, // 1
-                { 5, 5, 3 }, // 2
-                { 3, 3, 3 }, // 3
-                { 4, 4, 4 }, // 4
-                { 5, 5, 5 }, // 5
+                {1, 4, 4}, // 0
+                {2, 2, 2}, // 1
+                {5, 5, 3}, // 2
+                {3, 3, 3}, // 3
+                {4, 4, 4}, // 4
+                {5, 5, 5}, // 5
         };
-        HashSet<Integer> finalState = new HashSet<Integer>() {
-            {
-                add(3);
-            }
-        };
-        HashSet<Integer> deadState = new HashSet<Integer>() {
-            {
-                add(4);
-                add(5);
-            }
-        };
+        HashSet<Integer> finalState = new HashSet<>();
+        finalState.add(3);
+
+        HashSet<Integer> deadState = new HashSet<>();
+        deadState.add(4);
+        deadState.add(5);
+
         CharacterToIndexFunction charToIndex = (character) -> {
             int translated = 1;
             switch (character) {
-                case '[':
-                    translated = 0;
-                    break;
-                case ']':
-                    translated = 2;
-                    break;
-                default:
+                case '[' -> translated = 0;
+                case ']' -> translated = 2;
             }
             return translated;
         };
@@ -363,77 +321,84 @@ public class Lexer {
     }
 
     private String unescapeJavaString(String st) {
-
         StringBuilder sb = new StringBuilder(st.length());
+        int i = 0;
+        int len = st.length();
 
-        for (int i = 0; i < st.length(); i++) {
+        while (i < len) {
             char ch = st.charAt(i);
-            if (ch == '\\') {
-                char nextChar = (i == st.length() - 1) ? '\\'
-                        : st
-                        .charAt(i + 1);
-                // Octal escape?
-                if (nextChar >= '0' && nextChar <= '7') {
-                    String code = "" + nextChar;
-                    i++;
-                    if ((i < st.length() - 1) && st.charAt(i + 1) >= '0'
-                            && st.charAt(i + 1) <= '7') {
-                        code += st.charAt(i + 1);
-                        i++;
-                        if ((i < st.length() - 1) && st.charAt(i + 1) >= '0'
-                                && st.charAt(i + 1) <= '7') {
-                            code += st.charAt(i + 1);
-                            i++;
-                        }
-                    }
-                    sb.append((char) Integer.parseInt(code, 8));
+
+            if (ch != '\\') {
+                sb.append(ch);
+                continue;
+            }
+
+            if (i + 1 >= len) {
+                sb.append('\\');
+                break;
+            }
+
+            char next = st.charAt(i + 1);
+
+            if (isOctalDigit(next)) {
+                int[] result = parseOctal(st, i + 1);
+                sb.append((char) result[0]);
+                i = result[1];
+                continue;
+            }
+
+            switch (next) {
+                case 'b' -> sb.append('\b');
+                case 'f' -> sb.append('\f');
+                case 'n' -> sb.append('\n');
+                case 'r' -> sb.append('\r');
+                case 't' -> sb.append('\t');
+                case '\"' -> sb.append('\"');
+                case '\'' -> sb.append('\'');
+                case '\\' -> sb.append('\\');
+
+                case 'u' -> {
+                    int[] result = parseUnicode(st, i);
+                    sb.append(Character.toChars(result[0]));
+                    i = result[1];
                     continue;
                 }
-                switch (nextChar) {
-                    case '\\':
-                        break;
-                    case 'b':
-                        ch = '\b';
-                        break;
-                    case 'f':
-                        ch = '\f';
-                        break;
-                    case 'n':
-                        ch = '\n';
-                        break;
-                    case 'r':
-                        ch = '\r';
-                        break;
-                    case 't':
-                        ch = '\t';
-                        break;
-                    case '\"':
-                        ch = '\"';
-                        break;
-                    case '\'':
-                        ch = '\'';
-                        break;
-                    // Hex Unicode: u????
-                    case 'u':
-                        if (i >= st.length() - 5) {
-                            ch = 'u';
-                            break;
-                        }
-                        int code = Integer.parseInt(
-                                "" + st.charAt(i + 2) + st.charAt(i + 3)
-                                        + st.charAt(i + 4) + st.charAt(i + 5),
-                                16);
-                        sb.append(Character.toChars(code));
-                        i += 5;
-                        continue;
-                    default:
-                        ch = nextChar;
-                }
-                i++;
+
+                default -> sb.append(next);
             }
-            sb.append(ch);
+
+            i += 2;
         }
+
         return sb.toString();
+    }
+
+    private boolean isOctalDigit(char c) {
+        return c >= '0' && c <= '7';
+    }
+
+    private int[] parseOctal(String st, int start) {
+        int len = st.length();
+        int end = start;
+        StringBuilder code = new StringBuilder();
+
+        for (int j = 0; j < 3 && end < len && isOctalDigit(st.charAt(end)); j++) {
+            code.append(st.charAt(end++));
+        }
+
+        int value = Integer.parseInt(code.toString(), 8);
+        return new int[]{value, end};
+    }
+
+    private int[] parseUnicode(String st, int i) {
+        if (i + 5 >= st.length()) {
+            return new int[]{'u', i + 2};
+        }
+
+        String hex = st.substring(i + 2, i + 6);
+        int code = Integer.parseInt(hex, 16);
+
+        return new int[]{code, i + 6};
     }
 
     private int[] special_characters(int i) throws Exception {
@@ -461,7 +426,7 @@ public class Lexer {
         int startColumn = column;
         int startLine = line;
         int[] SCResult;
-        int[] result = new int[] { 0, 0, 0 };
+        int[] result = new int[]{0, 0, 0};
         for (++i; i < sourceCode.length(); i++) {
             char current = sourceCode.charAt(i);
             if (current == '\n') {
@@ -492,25 +457,16 @@ public class Lexer {
         int returnIndex = i;
         int[][] charStateTransitionTable = {
                 // D, .
-                { 1, 3 }, // 0
-                { 1, 2 }, // 1
-                { 4, 5 }, // 2
-                { 4, 5 }, // 3
-                { 4, 5 }, // 4
-                { 5, 5 }, // 5
+                {1, 3}, // 0
+                {1, 2}, // 1
+                {4, 5}, // 2
+                {4, 5}, // 3
+                {4, 5}, // 4
+                {5, 5}, // 5
         };
-        HashSet<Integer> finalState = new HashSet<Integer>() {
-            {
-                add(1);
-                add(2);
-                add(4);
-            }
-        };
-        HashSet<Integer> deadState = new HashSet<Integer>() {
-            {
-                add(5);
-            }
-        };
+        HashSet<Integer> finalState = new HashSet<>(List.of(1, 2, 4));
+        HashSet<Integer> deadState = new HashSet<>(List.of(5));
+
         CharacterToIndexFunction charToIndex = (character) -> {
             int translated = -1;
             if (Character.isDigit(character))
@@ -539,20 +495,13 @@ public class Lexer {
         int returnIndex = i;
         int[][] charStateTransitionTable = {
                 // _, $, A, D
-                { 1, 1, 1, 2 }, // 0
-                { 1, 1, 1, 1 }, // 1
-                { 2, 2, 2, 2 }, // 2
+                {1, 1, 1, 2}, // 0
+                {1, 1, 1, 1}, // 1
+                {2, 2, 2, 2}, // 2
         };
-        HashSet<Integer> finalState = new HashSet<Integer>() {
-            {
-                add(1);
-            }
-        };
-        HashSet<Integer> deadState = new HashSet<Integer>() {
-            {
-                add(2);
-            }
-        };
+        HashSet<Integer> finalState = new HashSet<>(List.of(1));
+        HashSet<Integer> deadState = new HashSet<Integer>(List.of(2));
+
         CharacterToIndexFunction charToIndex = (character) -> {
             int translated = -1;
             if (character == '_')
@@ -574,16 +523,13 @@ public class Lexer {
             if (Token.reservedWords.containsKey(res)) {
                 temp = new Token(Token.reservedWords.get(res), res, null, line, column);
                 switch (temp.type) {
-                    case START:
-                        codeBlock.push(temp);
-                        break;
-                    case STOP:
-                        if (codeBlock.isEmpty())
-                            throw lexerJ.newError(line, column, "STOP", "'STOP' is missing 'START'");
+                    case START -> codeBlock.push(temp);
+                    case END -> {
+                        if (codeBlock.isEmpty()) {
+                            throw lexerJ.newError(line, column, "END", "'END' is missing 'START'");
+                        }
                         codeBlock.pop();
-                        break;
-                    default:
-                        break;
+                    }
                 }
                 tokens.add(temp);
             } else {
