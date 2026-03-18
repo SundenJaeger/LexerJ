@@ -12,7 +12,7 @@ public class Main {
         LexerJ lexerJ = new LexerJ(args[0]);
         lexerJ.execute();
 
-        System.out.println("Press any key to continue...");
+        System.out.println("\nPress any key to continue...");
         scanner.nextLine();
     }
 }

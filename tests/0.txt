@@ -1,0 +1,13 @@
+%% 10hi10
+%% a#
+%% my first program in LEXOR
+SCRIPT AREA
+START SCRIPT
+DECLARE INT abc, b, c
+DECLARE CHAR x, w_23='w'
+DECLARE BOOL t="TRUE"
+abc=b=10
+w_23='a'
+%% this is a comment
+PRINT: abc & "hi" & b & $ & w_23 & [#]
+END SCRIPT
