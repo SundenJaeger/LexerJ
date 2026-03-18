@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;

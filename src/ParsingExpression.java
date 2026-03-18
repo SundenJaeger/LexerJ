@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 // expression     → assignment ;
 // assignment     → IDENTIFIER "=" assignment | logical_or ;
 // logic_or       → logic_and ( "OR" logic_and )* ;

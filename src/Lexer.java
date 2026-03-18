@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

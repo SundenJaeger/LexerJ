@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 public enum TokenType {
     LEFT_PARENTHESIS, RIGHT_PARENTHESIS, // ( )
     LEFT_BRACE, RIGHT_BRACE, // []
