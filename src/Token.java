@@ -1,146 +1,103 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class Token {
-    public static final HashMap<String, TokenType> reservedWords = new HashMap<>() {
-        {
-            put("AND", TokenType.AND);
-            put("OR", TokenType.OR);
-            put("NOT", TokenType.NOT);
-            put("PRINT", TokenType.PRINT);
-            put("SCAN", TokenType.SCAN);
-            put("DECLARE", TokenType.DECLARE);
-            put("INT", TokenType.INT);
-            put("BOOL", TokenType.BOOL);
-            put("FLOAT", TokenType.FLOAT);
-            put("CHAR", TokenType.CHAR);
-            put("SCRIPT", TokenType.SCRIPT);
-            put("AREA", TokenType.AREA);
-            put("START", TokenType.START);
-            put("END", TokenType.END);
-            put("IF", TokenType.IF);
-            put("ELSE", TokenType.ELSE);
-            put("FOR", TokenType.FOR);
-            put("REPEAT", TokenType.REPEAT);
-            put("WHEN", TokenType.WHEN);
-        }
-    };
+public record Token(TokenType type, String lexeme, Object literal, int line, int column) {
+    public static final Map<String, TokenType> reservedWords = Map.ofEntries(
+            Map.entry("AND", TokenType.AND),
+            Map.entry("OR", TokenType.OR),
+            Map.entry("NOT", TokenType.NOT),
+            Map.entry("PRINT", TokenType.PRINT),
+            Map.entry("SCAN", TokenType.SCAN),
+            Map.entry("DECLARE", TokenType.DECLARE),
+            Map.entry("INT", TokenType.INT),
+            Map.entry("BOOL", TokenType.BOOL),
+            Map.entry("FLOAT", TokenType.FLOAT),
+            Map.entry("CHAR", TokenType.CHAR),
+            Map.entry("SCRIPT", TokenType.SCRIPT),
+            Map.entry("AREA", TokenType.AREA),
+            Map.entry("START", TokenType.START),
+            Map.entry("END", TokenType.END),
+            Map.entry("IF", TokenType.IF),
+            Map.entry("ELSE", TokenType.ELSE),
+            Map.entry("FOR", TokenType.FOR),
+            Map.entry("REPEAT", TokenType.REPEAT),
+            Map.entry("WHEN", TokenType.WHEN)
+    );
 
-    public static final HashMap<TokenType, String> tokenTypeToLexeme = new HashMap<>() {
-        {
-            put(TokenType.LEFT_PARENTHESIS, "(");
-            put(TokenType.RIGHT_PARENTHESIS, ")");
-            put(TokenType.LEFT_BRACE, "[");
-            put(TokenType.RIGHT_BRACE, "]");
-            put(TokenType.COMMA, ",");
-            put(TokenType.ASSIGNMENT, "=");
-            put(TokenType.COLON, ":");
-            put(TokenType.OCTOTHORPE, "#");
-            put(TokenType.AMPERSAND, "&");
-            put(TokenType.DOLLAR, "$");
-            put(TokenType.ADDITION, "+");
-            put(TokenType.SUBTRACTION, "-");
-            put(TokenType.MULTIPLICATION, "*");
-            put(TokenType.DIVISION, "/");
-            put(TokenType.MODULO, "%");
-            put(TokenType.GREATER, ">");
-            put(TokenType.LESSER, "<");
-            put(TokenType.GREATER_EQUAL, ">=");
-            put(TokenType.LESSER_EQUAL, "<=");
-            put(TokenType.EQUAL, "==");
-            put(TokenType.NOT_EQUAL, "<>");
-            put(TokenType.AND, "AND");
-            put(TokenType.OR, "OR");
-            put(TokenType.NOT, "NOT");
-            put(TokenType.PRINT, "PRINT");
-            put(TokenType.SCAN, "SCAN");
-            put(TokenType.DECLARE, "DECLARE");
-            put(TokenType.INT, "INT");
-            put(TokenType.BOOL, "BOOL");
-            put(TokenType.FLOAT, "FLOAT");
-            put(TokenType.CHAR, "CHAR");
-            put(TokenType.SCRIPT, "SCRIPT");
-            put(TokenType.AREA, "AREA");
-            put(TokenType.START, "START");
-            put(TokenType.END, "END");
-            put(TokenType.IF, "IF");
-            put(TokenType.ELSE, "ELSE");
-            put(TokenType.FOR, "FOR");
-            put(TokenType.REPEAT, "REPEAT");
-            put(TokenType.WHEN, "WHEN");
-        }
-    };
+    public static final Map<TokenType, String> tokenTypeToLexeme = Map.ofEntries(
+            Map.entry(TokenType.LEFT_PARENTHESIS, "("),
+            Map.entry(TokenType.RIGHT_PARENTHESIS, ")"),
+            Map.entry(TokenType.LEFT_BRACE, "["),
+            Map.entry(TokenType.RIGHT_BRACE, "]"),
+            Map.entry(TokenType.COMMA, ","),
+            Map.entry(TokenType.ASSIGNMENT, "="),
+            Map.entry(TokenType.COLON, ":"),
+            Map.entry(TokenType.OCTOTHORPE, "#"),
+            Map.entry(TokenType.AMPERSAND, "&"),
+            Map.entry(TokenType.DOLLAR, "$"),
+            Map.entry(TokenType.ADDITION, "+"),
+            Map.entry(TokenType.SUBTRACTION, "-"),
+            Map.entry(TokenType.MULTIPLICATION, "*"),
+            Map.entry(TokenType.DIVISION, "/"),
+            Map.entry(TokenType.MODULO, "%"),
+            Map.entry(TokenType.GREATER, ">"),
+            Map.entry(TokenType.LESSER, "<"),
+            Map.entry(TokenType.GREATER_EQUAL, ">="),
+            Map.entry(TokenType.LESSER_EQUAL, "<="),
+            Map.entry(TokenType.EQUAL, "=="),
+            Map.entry(TokenType.NOT_EQUAL, "<>"),
+            Map.entry(TokenType.AND, "AND"),
+            Map.entry(TokenType.OR, "OR"),
+            Map.entry(TokenType.NOT, "NOT"),
+            Map.entry(TokenType.PRINT, "PRINT"),
+            Map.entry(TokenType.SCAN, "SCAN"),
+            Map.entry(TokenType.DECLARE, "DECLARE"),
+            Map.entry(TokenType.INT, "INT"),
+            Map.entry(TokenType.BOOL, "BOOL"),
+            Map.entry(TokenType.FLOAT, "FLOAT"),
+            Map.entry(TokenType.CHAR, "CHAR"),
+            Map.entry(TokenType.SCRIPT, "SCRIPT"),
+            Map.entry(TokenType.AREA, "AREA"),
+            Map.entry(TokenType.START, "START"),
+            Map.entry(TokenType.END, "END"),
+            Map.entry(TokenType.IF, "IF"),
+            Map.entry(TokenType.ELSE, "ELSE"),
+            Map.entry(TokenType.FOR, "FOR"),
+            Map.entry(TokenType.REPEAT, "REPEAT"),
+            Map.entry(TokenType.WHEN, "WHEN")
+    );
 
-    public static final HashSet<TokenType> logicalComparisonOperators = new HashSet<TokenType>() {
-        {
-            add(TokenType.GREATER);
-            add(TokenType.LESSER);
-            add(TokenType.GREATER_EQUAL);
-            add(TokenType.LESSER_EQUAL);
-            add(TokenType.EQUAL);
-            add(TokenType.NOT_EQUAL);
-            add(TokenType.AND);
-            add(TokenType.OR);
-            add(TokenType.NOT);
-        }
-    };
+    public static final Set<TokenType> logicalComparisonOperators = Set.of(
+            TokenType.GREATER, TokenType.LESSER,
+            TokenType.GREATER_EQUAL, TokenType.LESSER_EQUAL,
+            TokenType.EQUAL, TokenType.NOT_EQUAL,
+            TokenType.AND, TokenType.OR, TokenType.NOT
+    );
 
     public static boolean checkType(Object value, TokenType... variableType) {
-        boolean result = false;
-        types:
         for (TokenType tokenType : variableType) {
-            switch (tokenType) {
-                case BOOL:
-                    if (value instanceof TokenType instance) {
-                        result = instance == TokenType.BOOL || instance == TokenType.BOOL_LIT;
-                        break types;
-                    }
-                    result = value instanceof Boolean;
-                    break types;
-                case CHAR:
-                    if (value instanceof TokenType instance) {
-                        result = instance == TokenType.CHAR || instance == TokenType.CHAR_LIT;
-                        break types;
-                    }
-                    result = value instanceof Character;
-                    break types;
-                case FLOAT:
-                    if (value instanceof TokenType instance) {
-                        result = instance == TokenType.FLOAT || instance == TokenType.FLOAT_LIT;
-                        break types;
-                    }
-                    result = value instanceof Double;
-                    break types;
-                case INT:
-                    if (value instanceof TokenType instance) {
-                        result = instance == TokenType.INT || instance == TokenType.INT_LIT;
-                        break types;
-                    }
-                    result = value instanceof Integer;
-                    break types;
-                default:
+            boolean match = switch (tokenType) {
+                case BOOL ->
+                        value instanceof TokenType instance ? instance == TokenType.BOOL || instance == TokenType.BOOL_LIT : value instanceof Boolean;
+                case CHAR ->
+                        value instanceof TokenType instance ? instance == TokenType.CHAR || instance == TokenType.CHAR_LIT : value instanceof Character;
+                case FLOAT ->
+                        value instanceof TokenType instance ? instance == TokenType.FLOAT || instance == TokenType.FLOAT_LIT : value instanceof Double;
+                case INT ->
+                        value instanceof TokenType instance ? instance == TokenType.INT || instance == TokenType.INT_LIT : value instanceof Integer;
+                default -> false;
+            };
+            if (match) {
+                return true;
             }
         }
-        return result;
+        return false;
     }
 
-    final TokenType type;
-    final String lexeme;
-    final Object literal;
-    final int line;
-    final int column;
-
-    public Token(TokenType type, String lexeme, Object literal, int line, int column) {
-        this.type = type;
-        this.lexeme = lexeme;
-        this.literal = literal;
-        this.line = line;
-        this.column = column;
-    }
-
+    @Override
     public String toString() {
-        return String.format("Token(%s,\"%s\",%s,%d)", type, lexeme, literal, line);
+        return "Token(%s,\"%s\",%s,%d)".formatted(type, lexeme, literal, line);
     }
 }

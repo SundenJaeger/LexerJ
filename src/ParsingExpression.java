@@ -17,127 +17,33 @@
 //                | "(" expression ")"
 //                | IDENTIFIER ;
 
-public abstract class ParsingExpression {
-    interface Visitor<R> {
-        R assign(Assign expr) throws Exception;
+public sealed interface ParsingExpression permits
+        ParsingExpression.Assign,
+        ParsingExpression.Binary,
+        ParsingExpression.Grouping,
+        ParsingExpression.Literal,
+        ParsingExpression.Logical,
+        ParsingExpression.Unary,
+        ParsingExpression.Variable {
 
-        R binary(Binary expr) throws Exception;
-
-        R grouping(Grouping expr) throws Exception;
-
-        R literal(Literal expr) throws Exception;
-
-        R logical(Logical expr) throws Exception;
-
-        R unary(Unary expr) throws Exception;
-
-        R variable(Variable expr) throws Exception;
+    record Assign(Token name, ParsingExpression value, TokenType type) implements ParsingExpression {
     }
 
-    static class Assign extends ParsingExpression {
-        Assign(Token name, ParsingExpression value, TokenType type) {
-            this.name = name;
-            this.value = value;
-            this.type = type;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.assign(this);
-        }
-
-        final Token name;
-        final ParsingExpression value;
-        final TokenType type;
+    record Binary(ParsingExpression left, Token operator, ParsingExpression right) implements ParsingExpression {
     }
 
-    static class Binary extends ParsingExpression {
-        Binary(ParsingExpression left, Token operator, ParsingExpression right) {
-            this.left = left;
-            this.operator = operator;
-            this.right = right;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.binary(this);
-        }
-
-        final ParsingExpression left;
-        final Token operator;
-        final ParsingExpression right;
+    record Grouping(ParsingExpression expression) implements ParsingExpression {
     }
 
-    static class Grouping extends ParsingExpression {
-        Grouping(ParsingExpression expression) {
-            this.expression = expression;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.grouping(this);
-        }
-
-        final ParsingExpression expression;
+    record Literal(Object value) implements ParsingExpression {
     }
 
-    static class Literal extends ParsingExpression {
-        Literal(Object value) {
-            this.value = value;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.literal(this);
-        }
-
-        final Object value;
+    record Logical(ParsingExpression left, Token operator, ParsingExpression right) implements ParsingExpression {
     }
 
-    static class Logical extends ParsingExpression {
-        Logical(ParsingExpression left, Token operator, ParsingExpression right) {
-            this.left = left;
-            this.operator = operator;
-            this.right = right;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.logical(this);
-        }
-
-        final ParsingExpression left;
-        final Token operator;
-        final ParsingExpression right;
+    record Unary(Token operator, ParsingExpression right) implements ParsingExpression {
     }
 
-    static class Unary extends ParsingExpression {
-        Unary(Token operator, ParsingExpression right) {
-            this.operator = operator;
-            this.right = right;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.unary(this);
-        }
-
-        final Token operator;
-        final ParsingExpression right;
+    record Variable(Token name) implements ParsingExpression {
     }
-
-    static class Variable extends ParsingExpression {
-        Variable(Token name) {
-            this.name = name;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.variable(this);
-        }
-
-        final Token name;
-    }
-
-    abstract <R> R visit(Visitor<R> visitor) throws Exception;
 }

@@ -23,144 +23,39 @@
 
 import java.util.List;
 
-public abstract class ParsingStatement {
-    interface Visitor<R> {
-        R block(Block stmt) throws Exception;
+public sealed interface ParsingStatement permits
+        ParsingStatement.Block,
+        ParsingStatement.Expression,
+        ParsingStatement.If,
+        ParsingStatement.Print,
+        ParsingStatement.Scan,
+        ParsingStatement.Var,
+        ParsingStatement.RepeatWhen,
+        ParsingStatement.For {
 
-        R expression(Expression stmt) throws Exception;
-
-        R ifS(If stmt) throws Exception;
-
-        R print(Print stmt) throws Exception;
-
-        R scan(Scan stmt) throws Exception;
-
-        R var(Var stmt) throws Exception;
-
-        R repeatWhen(RepeatWhen stmt) throws Exception;
-
-        R forS(For stmt) throws Exception;
+    record Block(List<ParsingStatement> statements) implements ParsingStatement {
     }
 
-    static class Block extends ParsingStatement {
-        Block(List<ParsingStatement> statements) {
-            this.statements = statements;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.block(this);
-        }
-
-        final List<ParsingStatement> statements;
+    record Expression(ParsingExpression expression) implements ParsingStatement {
     }
 
-    static class Expression extends ParsingStatement {
-        Expression(ParsingExpression expression) {
-            this.expression = expression;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.expression(this);
-        }
-
-        final ParsingExpression expression;
+    record If(ParsingExpression condition, ParsingStatement thenBranch, ParsingStatement elseBranch,
+              Token ifToken) implements ParsingStatement {
     }
 
-    static class If extends ParsingStatement {
-        If(ParsingExpression condition, ParsingStatement thenBranch, ParsingStatement elseBranch, Token ifToken) {
-            this.condition = condition;
-            this.thenBranch = thenBranch;
-            this.elseBranch = elseBranch;
-            this.ifToken = ifToken;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.ifS(this);
-        }
-
-        final Token ifToken;
-        final ParsingExpression condition;
-        final ParsingStatement thenBranch;
-        final ParsingStatement elseBranch;
+    record Print(ParsingExpression expression) implements ParsingStatement {
     }
 
-    static class Print extends ParsingStatement {
-        Print(ParsingExpression expression) {
-            this.expression = expression;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.print(this);
-        }
-
-        final ParsingExpression expression;
+    record Scan(ParsingExpression.Variable[] variables) implements ParsingStatement {
     }
 
-    static class Scan extends ParsingStatement {
-        Scan(ParsingExpression.Variable[] variables) {
-            this.variables = variables;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.scan(this);
-        }
-
-        final ParsingExpression.Variable[] variables;
+    record Var(Token name, ParsingExpression initializer) implements ParsingStatement {
     }
 
-    static class Var extends ParsingStatement {
-        Var(Token name, ParsingExpression initializer) {
-            this.name = name;
-            this.initializer = initializer;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.var(this);
-        }
-
-        final Token name;
-        final ParsingExpression initializer;
+    record RepeatWhen(ParsingExpression condition, ParsingStatement body) implements ParsingStatement {
     }
 
-    static class RepeatWhen extends ParsingStatement {
-        RepeatWhen(ParsingExpression condition, ParsingStatement body) {
-            this.condition = condition;
-            this.body = body;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.repeatWhen(this);
-        }
-
-        final ParsingExpression condition;
-        final ParsingStatement body;
+    record For(ParsingExpression initializer, ParsingExpression condition, ParsingExpression increment,
+               ParsingStatement body) implements ParsingStatement {
     }
-
-    static class For extends ParsingStatement {
-        For(ParsingExpression initializer, ParsingExpression condition, ParsingExpression increment, ParsingStatement body) {
-            this.initializer = initializer;
-            this.condition = condition;
-            this.increment = increment;
-            this.body = body;
-        }
-
-        @Override
-        <R> R visit(Visitor<R> visitor) throws Exception {
-            return visitor.forS(this);
-        }
-
-        final ParsingExpression initializer;
-        final ParsingExpression condition;
-        final ParsingExpression increment;
-        final ParsingStatement body;
-    }
-
-    abstract <R> R visit(Visitor<R> visitor) throws Exception;
 }

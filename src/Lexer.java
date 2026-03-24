@@ -524,7 +524,7 @@ public class Lexer {
             Token temp;
             if (Token.reservedWords.containsKey(res)) {
                 temp = new Token(Token.reservedWords.get(res), res, null, line, column);
-                switch (temp.type) {
+                switch (temp.type()) {
                     case START -> codeBlock.push(temp);
                     case END -> {
                         if (codeBlock.isEmpty()) {

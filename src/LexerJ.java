@@ -37,13 +37,11 @@ public class LexerJ {
         int line = 0;
         for (int i = 0; i < sourceCode.length(); i++) {
             if (sourceCode.charAt(i) == '\n') {
-                if (line > 0) {
+                if (line > 0)
                     start = end + 1;
-                }
                 end = i;
-                if (line == lineNumber) {
+                if (line == lineNumber)
                     break;
-                }
                 line++;
             }
         }
@@ -52,13 +50,13 @@ public class LexerJ {
     }
 
     public Exception newError(Token token, String message) {
-        String lineCode = getCodeAtLine(token.line);
-        String errorPoint = " ".repeat(token.column - 1) + "^";
+        String lineCode = getCodeAtLine(token.line());
+        String errorPoint = " ".repeat(token.column() - 1) + "^";
 
         return new Exception(
-                String.format("%s\n[line: %d, column: %d] on %s '%s'.\n%s\n%s", message, token.line + 1, token.column,
-                        token.type,
-                        token.lexeme,
+                String.format("%s\n[line: %d, column: %d] on %s '%s'.\n%s\n%s", message, token.line() + 1, token.column(),
+                        token.type(),
+                        token.lexeme(),
                         lineCode, errorPoint));
     }
 

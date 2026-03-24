@@ -3,7 +3,7 @@
 import java.util.List;
 import java.util.Scanner;
 
-class Interpreter implements ParsingExpression.Visitor<Object>, ParsingStatement.Visitor<Void> {
+class Interpreter {
     private final LexerJ lexerJ;
     private final Storage global = new Storage();
 
@@ -11,64 +11,111 @@ class Interpreter implements ParsingExpression.Visitor<Object>, ParsingStatement
         this.lexerJ = lexerJ;
     }
 
-    @Override
-    public Object literal(ParsingExpression.Literal expr) {
-        return expr.value;
+    void interpret(List<ParsingStatement> statements) throws Exception {
+        for (var stmt : statements) {
+            execute(stmt);
+        }
     }
 
-    @Override
-    public Object logical(ParsingExpression.Logical expr) throws Exception {
-        Object left = evaluate(expr.left);
-        try {
-            if (expr.operator.type == TokenType.OR) {
-                if (toBoolean(left)) {
-                    return left;
-                }
-            } else {
-                if (!toBoolean(left)) {
-                    return left;
+    private void execute(ParsingStatement stmt) throws Exception {
+        switch (stmt) {
+            case ParsingStatement.Block(var statements) -> {
+                for (var s : statements) {
+                    execute(s);
                 }
             }
-        } catch (Exception e) {
-            throw lexerJ.newError(expr.operator, e.getMessage());
+            case ParsingStatement.Expression(var expr) -> evaluate(expr);
+            case ParsingStatement.Print(var expr) -> System.out.println(stringify(evaluate(expr)));
+            case ParsingStatement.Scan(var vars) -> scan(vars);
+            case ParsingStatement.Var(var name, var init) -> {
+                Object value = init != null ? evaluate(init) : null;
+                global.define(name.lexeme(), value);
+            }
+            case ParsingStatement.If(var cond, var then, var elseBranch, var ifToken) -> {
+                try {
+                    if (toBoolean(evaluate(cond))) {
+                        execute(then);
+                    } else if (elseBranch != null) {
+                        execute(elseBranch);
+                    }
+                } catch (Exception e) {
+                    throw lexerJ.newError(ifToken, e.getMessage());
+                }
+            }
+            case ParsingStatement.RepeatWhen(var cond, var body) -> {
+                while (toBoolean(evaluate(cond))) {
+                    execute(body);
+                }
+            }
+            case ParsingStatement.For(var init, var cond, var incr, var body) -> {
+                evaluate(init);
+                while (toBoolean(evaluate(cond))) {
+                    execute(body);
+                    evaluate(incr);
+                }
+            }
         }
-
-        return evaluate(expr.right);
     }
 
-    @Override
-    public Object unary(ParsingExpression.Unary expr) throws Exception {
-        Object right = evaluate(expr.right);
-        switch (expr.operator.type) {
+    public void scan(ParsingExpression.Variable[] vars) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+        int x = 0;
+        for (var v : vars) {
+            Object value = global.get(v.name());
+            try {
+                switch (value.getClass().getName()) {
+                    case "java.lang.Character" -> {
+                        if (x > 0)
+                            scanner.nextLine();
+                        global.assign(v.name(), scanner.nextLine().charAt(0));
+                    }
+                    case "java.lang.Double" -> global.assign(v.name(), scanner.nextDouble());
+                    case "java.lang.Integer" -> global.assign(v.name(), scanner.nextInt());
+                    case "java.lang.Boolean" -> {
+                        if (x > 0) {
+                            scanner.nextLine();
+                        }
+                        String input = scanner.nextLine();
+                        boolean belongs = input.equals("TRUE") || input.equals("FALSE");
+                        if (!belongs) {
+                            throw new Exception();
+                        }
+                        global.assign(v.name(), input.equals("TRUE"));
+                    }
+                    default -> throw new Exception();
+                }
+            } catch (Exception e) {
+                scanner.close();
+                throw lexerJ.newError(v.name(), "Unsupported input data type.");
+            }
+            x++;
+        }
+        scanner.close();
+    }
+
+    public Object unary(Token op, Object right) throws Exception {
+        return switch (op.type()) {
             case NOT -> {
                 try {
-                    return !toBoolean(right);
+                    yield !toBoolean(right);
                 } catch (Exception e) {
-                    throw lexerJ.newError(expr.operator, e.getMessage());
+                    throw lexerJ.newError(op, e.getMessage());
                 }
             }
             case ADDITION -> {
-                checkNumberOperand(expr.operator, right);
-                if (right instanceof Double) {
-                    return right;
-                }
-                if (right instanceof Integer) {
-                    return right;
-                }
+                checkNumberOperand(op, right);
+                yield right;
             }
             case SUBTRACTION -> {
-                checkNumberOperand(expr.operator, right);
-                if (right instanceof Double) {
-                    return -(double) right;
-                }
-                if (right instanceof Integer) {
-                    return -(int) right;
-                }
+                checkNumberOperand(op, right);
+                yield switch (right) {
+                    case Double d -> -d;
+                    case Integer i -> -i;
+                    default -> null;
+                };
             }
-            default -> throw lexerJ.newError(expr.operator, "Invalid unary operator.");
-        }
-
-        return null;
+            default -> throw lexerJ.newError(op, "Invalid unary operator.");
+        };
     }
 
     private boolean toBoolean(Object object) throws Exception {
@@ -79,338 +126,105 @@ class Interpreter implements ParsingExpression.Visitor<Object>, ParsingStatement
         throw new Exception("Operand must be a boolean.");
     }
 
-    @Override
-    public Object variable(ParsingExpression.Variable expr) throws Exception {
-        return global.get(expr.name);
+    private Object evaluate(ParsingExpression expr) throws Exception {
+        return switch (expr) {
+            case ParsingExpression.Literal(var value) -> value;
+            case ParsingExpression.Grouping(var inner) -> evaluate(inner);
+            case ParsingExpression.Variable(var name) -> global.get(name);
+            case ParsingExpression.Assign(var name, var value, var type) -> {
+                Object val = evaluate(value);
+                if (type == TokenType.FLOAT && Token.checkType(val, TokenType.INT)) {
+                    val = Double.parseDouble(val.toString());
+                }
+
+                if (!Token.checkType(val, type)) {
+                    throw lexerJ.newError(name, "Expected expression value as '%s'.".formatted(type));
+                }
+
+                global.assign(name, val);
+                yield val;
+            }
+            case ParsingExpression.Unary(var op, var right) -> unary(op, evaluate(right));
+            case ParsingExpression.Logical(var left, var op, var right) -> {
+                var l = evaluate(left);
+                try {
+                    if (op.type() == TokenType.OR) {
+                        if (toBoolean(l)) yield l;
+                    } else {
+                        if (!toBoolean(l)) yield l;
+                    }
+                } catch (Exception e) {
+                    throw lexerJ.newError(op, e.getMessage());
+                }
+                yield evaluate(right);
+            }
+            case ParsingExpression.Binary(var left, var op, var right) -> binary(evaluate(left), op, evaluate(right));
+        };
+    }
+
+    public Object binary(Object left, Token op, Object right) throws Exception {
+        return switch (op.type()) {
+            case GREATER -> {
+                checkNumberOperands(op, left, right);
+                yield compareNumbers(left, right) > 0;
+            }
+            case GREATER_EQUAL -> {
+                checkNumberOperands(op, left, right);
+                yield compareNumbers(left, right) >= 0;
+            }
+            case LESSER -> {
+                checkNumberOperands(op, left, right);
+                yield compareNumbers(left, right) < 0;
+            }
+            case LESSER_EQUAL -> {
+                checkNumberOperands(op, left, right);
+                yield compareNumbers(left, right) <= 0;
+            }
+            case EQUAL -> isEqual(left, right);
+            case NOT_EQUAL -> !isEqual(left, right);
+            case ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION -> {
+                checkNumberOperands(op, left, right);
+                yield applyArithmetic(left, right, op.type());
+            }
+            case MODULO -> {
+                if (left instanceof Integer l && right instanceof Integer r) yield l % r;
+                throw lexerJ.newError(op, "Operand must be an integer.");
+            }
+            case AMPERSAND -> stringify(left) + stringify(right);
+            default -> throw lexerJ.newError(op, "Invalid binary operator.");
+        };
+    }
+
+    private double compareNumbers(Object left, Object right) {
+        double l = left instanceof Integer i ? i : (Double) left;
+        double r = right instanceof Integer i ? i : (Double) right;
+        return Double.compare(l, r);
+    }
+
+    private Object applyArithmetic(Object left, Object right, TokenType op) {
+        if (left instanceof Integer l && right instanceof Integer r) {
+            return switch (op) {
+                case ADDITION -> l + r;
+                case SUBTRACTION -> l - r;
+                case MULTIPLICATION -> l * r;
+                case DIVISION -> l / r;
+                default -> null;
+            };
+        }
+        double l = left instanceof Integer i ? i : (Double) left;
+        double r = right instanceof Integer i ? i : (Double) right;
+        return switch (op) {
+            case ADDITION -> l + r;
+            case SUBTRACTION -> l - r;
+            case MULTIPLICATION -> l * r;
+            case DIVISION -> l / r;
+            default -> null;
+        };
     }
 
     private boolean isEqual(Object a, Object b) {
-        if (a == null && b == null) {
-            return true;
-        }
-        if (a == null) {
-            return false;
-        }
-
+        if (a == null) return b == null;
         return a.equals(b);
-    }
-
-    @Override
-    public Object grouping(ParsingExpression.Grouping expr) throws Exception {
-        return evaluate(expr.expression);
-    }
-
-    private Object evaluate(ParsingExpression expr) throws Exception {
-        return expr.visit(this);
-    }
-
-    private void execute(ParsingStatement stmt) throws Exception {
-        stmt.visit(this);
-    }
-
-    void executeBlock(List<ParsingStatement> statements) throws Exception {
-        for (ParsingStatement statement : statements)
-            execute(statement);
-    }
-
-    @Override
-    public Void block(ParsingStatement.Block stmt) throws Exception {
-        executeBlock(stmt.statements);
-
-        return null;
-    }
-
-    @Override
-    public Void expression(ParsingStatement.Expression stmt) throws Exception {
-        evaluate(stmt.expression);
-
-        return null;
-    }
-
-    @Override
-    public Void ifS(ParsingStatement.If stmt) throws Exception {
-        Object condition = evaluate(stmt.condition);
-        try {
-            if (toBoolean(condition)) {
-                execute(stmt.thenBranch);
-            } else if (stmt.elseBranch != null) {
-                execute(stmt.elseBranch);
-            }
-        } catch (Exception e) {
-            throw lexerJ.newError(stmt.ifToken, e.getMessage());
-        }
-
-        return null;
-    }
-
-    @Override
-    public Void print(ParsingStatement.Print stmt) throws Exception {
-        Object value = evaluate(stmt.expression);
-        System.out.print(stringify(value));
-
-        return null;
-    }
-
-    @Override
-    public Void scan(ParsingStatement.Scan stmt) throws Exception {
-        Scanner scanner = new Scanner(System.in);
-        int x = 0;
-        for (ParsingExpression.Variable v : stmt.variables) {
-            Object value = global.get(v.name);
-            try {
-                switch (value.getClass().getName()) {
-                    case "java.lang.Character" -> {
-                        if (x > 0)
-                            scanner.nextLine();
-                        global.assign(v.name, (char) scanner.nextLine().charAt(0));
-                    }
-                    case "java.lang.Double" -> global.assign(v.name, (double) scanner.nextDouble());
-                    case "java.lang.Integer" -> global.assign(v.name, (int) scanner.nextInt());
-                    case "java.lang.Boolean" -> {
-                        if (x > 0) {
-                            scanner.nextLine();
-                        }
-                        String input = scanner.nextLine();
-                        boolean belongs = input.equals("TRUE") || input.equals("FALSE");
-                        if (!belongs) {
-                            throw new Exception();
-                        }
-                        global.assign(v.name, input.equals("TRUE"));
-                    }
-                    default -> throw new Exception();
-                }
-            } catch (Exception e) {
-                scanner.close();
-                throw lexerJ.newError(v.name, "Unsupported input data type.");
-            }
-            x++;
-        }
-        scanner.close();
-
-        return null;
-    }
-
-    @Override
-    public Void var(ParsingStatement.Var stmt) throws Exception {
-        Object value = null;
-        if (stmt.initializer != null) {
-            value = evaluate(stmt.initializer);
-        }
-        global.define(stmt.name.lexeme, value);
-
-        return null;
-    }
-
-    @Override
-    public Void repeatWhen(ParsingStatement.RepeatWhen stmt) throws Exception {
-        while (toBoolean(evaluate(stmt.condition))) {
-            execute(stmt.body);
-        }
-
-        return null;
-    }
-
-    @Override
-    public Void forS(ParsingStatement.For stmt) throws Exception {
-        evaluate(stmt.initializer);
-        while (toBoolean(evaluate(stmt.condition))) {
-            execute(stmt.body);
-            evaluate(stmt.increment);
-        }
-
-        return null;
-    }
-
-    @Override
-    public Object assign(ParsingExpression.Assign expr) throws Exception {
-        Object value = evaluate(expr.value);
-        if (expr.type == TokenType.FLOAT && Token.checkType(value, TokenType.INT)) {
-            value = Double.parseDouble(value.toString());
-        }
-        if (!Token.checkType(value, expr.type))
-            throw lexerJ.newError(expr.name, String.format("Expected expression value as '%s'.", expr.type));
-        global.assign(expr.name, value);
-
-        return value;
-    }
-
-    @Override
-    public Object binary(ParsingExpression.Binary expr) throws Exception {
-        Object left = evaluate(expr.left);
-        Object right = evaluate(expr.right);
-
-        switch (expr.operator.type) {
-            case GREATER -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double v4 when right instanceof Double -> {
-                        return (double) left > (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left > (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left > (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left > (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case GREATER_EQUAL -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double v3 when right instanceof Double -> {
-                        return (double) left >= (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left >= (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left >= (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left >= (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case LESSER -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double v2 when right instanceof Double -> {
-                        return (double) left < (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left < (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left < (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left < (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case LESSER_EQUAL -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double v1 when right instanceof Double -> {
-                        return (double) left <= (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left <= (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left <= (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left <= (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case NOT_EQUAL -> {
-                return !isEqual(left, right);
-            }
-            case EQUAL -> {
-                return isEqual(left, right);
-            }
-            case SUBTRACTION -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double aDouble when right instanceof Double -> {
-                        return (double) left - (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left - (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left - (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left - (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case ADDITION -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double v when right instanceof Double -> {
-                        return (double) left + (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left + (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left + (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left + (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case DIVISION -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double v when right instanceof Double -> {
-                        return (double) left / (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left / (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left / (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left / (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case MULTIPLICATION -> {
-                checkNumberOperands(expr.operator, left, right);
-                switch (left) {
-                    case Double v when right instanceof Double -> {
-                        return (double) left * (double) right;
-                    }
-                    case Integer i when right instanceof Integer -> {
-                        return (int) left * (int) right;
-                    }
-                    case Double v when right instanceof Integer -> {
-                        return (double) left * (int) right;
-                    }
-                    case Integer i when right instanceof Double -> {
-                        return (int) left * (double) right;
-                    }
-                    default -> {
-                    }
-                }
-            }
-            case MODULO -> {
-                if (left instanceof Integer && right instanceof Integer) {
-                    return (int) left % (int) right;
-                } else {
-                    throw lexerJ.newError(expr.operator, "Operand must be an integer.");
-                }
-            }
-            case AMPERSAND -> {
-                return stringify(left) + stringify(right);
-            }
-            default -> throw lexerJ.newError(expr.operator, "Invalid binary operator.");
-        }
-        return null;
     }
 
     private void checkNumberOperand(Token operator, Object operand) throws Exception {
@@ -427,12 +241,6 @@ class Interpreter implements ParsingExpression.Visitor<Object>, ParsingStatement
         }
 
         throw lexerJ.newError(operator, "Operand must be a number.");
-    }
-
-    void interpret(List<ParsingStatement> statements) throws Exception {
-        for (ParsingStatement statement : statements) {
-            execute(statement);
-        }
     }
 
     private String stringify(Object object) {
