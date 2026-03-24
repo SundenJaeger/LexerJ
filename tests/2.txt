@@ -1,0 +1,8 @@
+%% [-60]
+SCRIPT AREA
+START SCRIPT
+DECLARE INT xyz, abc=100
+xyz= ((abc *5)/10 + 10) * -1
+%% xyz should have the value -60
+PRINT: [[] & xyz & []]
+END SCRIPT

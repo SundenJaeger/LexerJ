@@ -1,0 +1,12 @@
+%% 9
+%% hi9
+%% n&FALSE
+SCRIPT AREA
+START SCRIPT
+DECLARE INT xyz=6, b=1
+DECLARE CHAR w_23='m'
+DECLARE BOOL t="TRUE"
+xyz=b=9
+w_23='n'
+PRINT: xyz & $ & "hi" & b & $ & w_23 & [&] & (t AND "FALSE")
+END SCRIPT

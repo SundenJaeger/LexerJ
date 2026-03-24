@@ -1,0 +1,5 @@
+%% [Error] Missing new line after 'START SCRIPT'
+%% line-number 1 on END 'END'
+%% SCRIPT AREA START SCRIPT END SCRIPT
+SCRIPT AREA
+START SCRIPT END SCRIPT

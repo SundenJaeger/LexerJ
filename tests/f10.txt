@@ -1,0 +1,7 @@
+%% [Error] Expected 'INT' type.
+SCRIPT AREA
+START SCRIPT
+DECLARE INT a=5
+DECLARE INT b=1.5
+PRINT: a*b
+END SCRIPT

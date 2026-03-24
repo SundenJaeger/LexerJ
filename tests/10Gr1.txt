@@ -1,0 +1,12 @@
+%% 5
+%% hi
+%% y&
+SCRIPT AREA
+START SCRIPT
+DECLARE INT abc, c
+DECLARE CHAR x, w_23='w'
+DECLARE BOOL t="TRUE"
+abc=5
+w_23='y'
+PRINT: abc & $ & "hi" & $ & w_23 & [&]
+END SCRIPT

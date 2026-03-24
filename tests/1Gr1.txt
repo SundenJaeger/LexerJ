@@ -1,0 +1,4 @@
+%% [Error] 'END' is missing 'START'
+%% line-number 1 on END.
+%% END SCRIPT
+END SCRIPT

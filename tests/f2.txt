@@ -1,0 +1,5 @@
+%% [Error] Undefined variable 'TRUE'. (TRUE without quotes is not a BOOL literal)
+SCRIPT AREA
+START SCRIPT
+DECLARE BOOL b=TRUE, c="FALSE"
+END SCRIPT

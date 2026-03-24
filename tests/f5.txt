@@ -1,0 +1,5 @@
+%% (empty - DECLARE after END SCRIPT is ignored)
+SCRIPT AREA
+START SCRIPT
+END SCRIPT
+DECLARE CHAR t, p

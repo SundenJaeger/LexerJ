@@ -1,0 +1,7 @@
+%% [Error] Expected valid variable name.
+%% line-number 3 on INT_LIT '1'
+%% DECLARE BOOL 1x
+SCRIPT AREA
+START SCRIPT
+DECLARE BOOL 1x
+END SCRIPT

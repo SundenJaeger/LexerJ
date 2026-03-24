@@ -1,0 +1,5 @@
+%% [Error] Expected valid variable name but got reserved keyword.
+SCRIPT AREA
+START SCRIPT
+DECLARE INT ELSE
+END SCRIPT

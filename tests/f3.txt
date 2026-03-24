@@ -1,0 +1,7 @@
+%% [Error] Misplaced variable declaration.
+SCRIPT AREA
+START SCRIPT
+DECLARE FLOAT n
+PRINT: n
+DECLARE BOOL b
+END SCRIPT

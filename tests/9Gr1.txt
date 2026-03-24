@@ -1,0 +1,6 @@
+%% [7]
+SCRIPT AREA
+START SCRIPT
+DECLARE INT a=7
+PRINT: [[] & a & []]
+END SCRIPT

@@ -1,0 +1,8 @@
+SCRIPT AREA
+START SCRIPT
+DECLARE INT x
+DECLARE INT y
+SCAN: x
+y = x + 1
+PRINT: [[] & (y+2) & []]
+END SCRIPT

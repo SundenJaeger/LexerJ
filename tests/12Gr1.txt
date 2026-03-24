@@ -1,0 +1,9 @@
+%% [Error] Misplaced variable declaration.
+%% line-number 2 on DECLARE 'DECLARE'.
+%% DECLARE BOOL t="TRUE"
+SCRIPT AREA
+START SCRIPT
+DECLARE INT abc, b, c
+abc = 1
+DECLARE BOOL t="TRUE"
+END SCRIPT
