@@ -11,7 +11,7 @@ public class Main {
 
         Scanner scanner = new Scanner(System.in);
 
-        LexerJ lexerJ = new LexerJ(args[0]);
+        LexerJ lexerJ = new LexerJ(args[0], scanner);
         lexerJ.execute();
 
         System.out.println("\nPress any key to continue...");

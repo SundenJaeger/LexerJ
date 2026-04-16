@@ -5,14 +5,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Scanner;
 
 public class LexerJ {
     private Lexer lexer;
     private Parser parser;
     private Interpreter interpret;
     private final StringBuilder sourceCode = new StringBuilder();
+    private final Scanner scanner;
 
-    public LexerJ(String filePath) {
+    public LexerJ(String filePath, Scanner scanner) {
+        this.scanner = scanner;
+
         File file = new File(filePath);
 
         try (BufferedReader br = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
@@ -88,7 +92,7 @@ public class LexerJ {
                 errorType = "Parser-Error";
                 throw e;
             }
-            interpret = new Interpreter(this);
+            interpret = new Interpreter(this, scanner);
             try {
                 interpret.interpret(statements);
             } catch (Exception e) {

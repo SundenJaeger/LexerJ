@@ -6,9 +6,11 @@ import java.util.Scanner;
 class Interpreter {
     private final LexerJ lexerJ;
     private final Storage global = new Storage();
+    private final Scanner scanner;
 
-    public Interpreter(LexerJ lexerJ) {
+    public Interpreter(LexerJ lexerJ, Scanner scanner) {
         this.lexerJ = lexerJ;
+        this.scanner = scanner;
     }
 
     void interpret(List<ParsingStatement> statements) throws Exception {
@@ -58,7 +60,6 @@ class Interpreter {
     }
 
     public void scan(ParsingExpression.Variable[] vars) throws Exception {
-        Scanner scanner = new Scanner(System.in);
         int x = 0;
         for (var v : vars) {
             Object value = global.get(v.name());
@@ -85,12 +86,12 @@ class Interpreter {
                     default -> throw new Exception();
                 }
             } catch (Exception e) {
-                scanner.close();
                 throw lexerJ.newError(v.name(), "Unsupported input data type.");
             }
             x++;
+
+            scanner.nextLine();
         }
-        scanner.close();
     }
 
     public Object unary(Token op, Object right) throws Exception {
