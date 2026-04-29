@@ -253,7 +253,7 @@ public class Lexer {
         finalState.add(6);
 
         HashSet<Integer> deadState = new HashSet<>();
-        finalState.add(9);
+        deadState.add(9);
 
         CharacterToIndexFunction charToIndex = (character) -> {
             int translated = -1;
