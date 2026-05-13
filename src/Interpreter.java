@@ -60,37 +60,33 @@ class Interpreter {
     }
 
     public void scan(ParsingExpression.Variable[] vars) throws Exception {
-        int x = 0;
-        for (var v : vars) {
+        String line = scanner.nextLine();
+        String[] tokens = line.split("[,\\s]+");
+        if (tokens.length < vars.length) {
+            throw lexerJ.newError(vars[0].name(),
+                    "Expected " + vars.length + " value(s) but got " + tokens.length + ".");
+        }
+        for (int x = 0; x < vars.length; x++) {
+            var v = vars[x];
             Object value = global.get(v.name());
             try {
                 switch (value.getClass().getName()) {
                     case "java.lang.Character" -> {
-                        if (x > 0)
-                            scanner.nextLine();
-                        global.assign(v.name(), scanner.nextLine().charAt(0));
+                        if (tokens[x].length() != 1) throw new Exception();
+                        global.assign(v.name(), tokens[x].charAt(0));
                     }
-                    case "java.lang.Double" -> global.assign(v.name(), scanner.nextDouble());
-                    case "java.lang.Integer" -> global.assign(v.name(), scanner.nextInt());
+                    case "java.lang.Double" -> global.assign(v.name(), Double.parseDouble(tokens[x]));
+                    case "java.lang.Integer" -> global.assign(v.name(), Integer.parseInt(tokens[x]));
                     case "java.lang.Boolean" -> {
-                        if (x > 0) {
-                            scanner.nextLine();
-                        }
-                        String input = scanner.nextLine();
-                        boolean belongs = input.equals("TRUE") || input.equals("FALSE");
-                        if (!belongs) {
-                            throw new Exception();
-                        }
-                        global.assign(v.name(), input.equals("TRUE"));
+                        boolean belongs = tokens[x].equals("TRUE") || tokens[x].equals("FALSE");
+                        if (!belongs) throw new Exception();
+                        global.assign(v.name(), tokens[x].equals("TRUE"));
                     }
                     default -> throw new Exception();
                 }
             } catch (Exception e) {
                 throw lexerJ.newError(v.name(), "Unsupported input data type.");
             }
-            x++;
-
-            scanner.nextLine();
         }
     }
 
