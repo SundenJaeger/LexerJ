@@ -27,7 +27,7 @@ class Interpreter {
                 }
             }
             case ParsingStatement.Expression(var expr) -> evaluate(expr);
-            case ParsingStatement.Print(var expr) -> System.out.println(stringify(evaluate(expr)));
+            case ParsingStatement.Print(var expr) -> System.out.print(stringify(evaluate(expr)));
             case ParsingStatement.Scan(var vars) -> scan(vars);
             case ParsingStatement.Var(var name, var init) -> {
                 Object value = init != null ? evaluate(init) : null;
