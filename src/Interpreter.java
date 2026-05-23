@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -61,7 +62,9 @@ class Interpreter {
 
     public void scan(ParsingExpression.Variable[] vars) throws Exception {
         String line = scanner.nextLine();
-        String[] tokens = line.split("[,\\s]+");
+        String[] tokens = Arrays.stream(line.split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
         if (tokens.length < vars.length) {
             throw lexerJ.newError(vars[0].name(),
                     "Expected " + vars.length + " value(s) but got " + tokens.length + ".");
