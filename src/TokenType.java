@@ -7,6 +7,7 @@ public enum TokenType {
     COMMA, ASSIGNMENT, COLON, // , = :
     OCTOTHORPE, AMPERSAND, DOLLAR, // # & $
     ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION, MODULO, // + - * / %
+    INCREMENT, DECREMENT, // ++ --
 
     GREATER, LESSER, // > <
     GREATER_EQUAL, LESSER_EQUAL, // >= <=

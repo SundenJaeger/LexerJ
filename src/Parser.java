@@ -348,6 +348,16 @@ public class Parser {
             if (op.type() == TokenType.NOT) expectLogical(right);
             return new ParsingExpression.Unary(op, right);
         }
+
+        if (matchAny(TokenType.INCREMENT, TokenType.DECREMENT)) {
+            var op = prev();
+            var name = expect(TokenType.IDENTIFIER, "Expected variable after '" + op.lexeme() + "'.");
+            if (!variablesType.containsKey(name.lexeme()))
+                throw lexerJ.newError(name, "Undefined variable '%s'.".formatted(name.lexeme()));
+            if (variablesType.get(name.lexeme()) == TokenType.FLOAT)
+                throw lexerJ.newError(name, "Increment/decrement only supported on INT variables.");
+            return new ParsingExpression.IncrDecr(op, name, true);
+        }
         return parsePrimary();
     }
 
@@ -357,11 +367,10 @@ public class Parser {
         if (match(TokenType.OCTOTHORPE))
             return new ParsingExpression.Literal("\n");
 
-        // Escape sequence: [x] → literal content; []] → ]; [[] → [; [#] → #
         if (match(TokenType.LEFT_BRACE)) {
             String content;
             if (check(TokenType.RIGHT_BRACE)) {
-                advance(); // consume content ]
+                advance();
                 expect(TokenType.RIGHT_BRACE, "Expected ']' to close escape sequence.");
                 content = "]";
             } else {
@@ -383,7 +392,15 @@ public class Parser {
         if (match(TokenType.IDENTIFIER)) {
             if (!varDeclarations && !variablesType.containsKey(prev().lexeme()))
                 throw lexerJ.newError(prev(), "Undefined variable '%s'.".formatted(prev().lexeme()));
-            return new ParsingExpression.Variable(prev());
+            var varToken = prev();
+
+            if (matchAny(TokenType.INCREMENT, TokenType.DECREMENT)) {
+                var op = prev();
+                if (variablesType.get(varToken.lexeme()) == TokenType.FLOAT)
+                    throw lexerJ.newError(varToken, "Increment/decrement only supported on INT variables.");
+                return new ParsingExpression.IncrDecr(op, varToken, false);
+            }
+            return new ParsingExpression.Variable(varToken);
         }
 
         if (match(TokenType.LEFT_PARENTHESIS)) {

@@ -145,6 +145,16 @@ class Interpreter {
                 yield val;
             }
             case ParsingExpression.Unary(var op, var right) -> unary(op, evaluate(right));
+            case ParsingExpression.IncrDecr(var op, var varToken, var prefix) -> {
+                Object current = global.get(varToken);
+                if (!(current instanceof Integer)) {
+                    throw lexerJ.newError(varToken, "Increment/decrement only supported on INT variables.");
+                }
+                int val = (Integer) current;
+                int newVal = op.type() == TokenType.INCREMENT ? val + 1 : val - 1;
+                global.assign(varToken, newVal);
+                yield prefix ? newVal : val;
+            }
             case ParsingExpression.Logical(var left, var op, var right) -> {
                 var l = evaluate(left);
                 try {

@@ -54,10 +54,22 @@ public class Lexer {
                             tokens.add(new Token(TokenType.AMPERSAND, Character.toString(current), null, line, column));
                     case '$' ->
                             tokens.add(new Token(TokenType.DOLLAR, Character.toString(current), null, line, column));
-                    case '+' ->
+                    case '+' -> {
+                        if (i + 1 < sourceCode.length() && sourceCode.charAt(i + 1) == '+') {
+                            tokens.add(new Token(TokenType.INCREMENT, "++", null, line, column));
+                            i++; column++;
+                        } else {
                             tokens.add(new Token(TokenType.ADDITION, Character.toString(current), null, line, column));
-                    case '-' ->
+                        }
+                    }
+                    case '-' -> {
+                        if (i + 1 < sourceCode.length() && sourceCode.charAt(i + 1) == '-') {
+                            tokens.add(new Token(TokenType.DECREMENT, "--", null, line, column));
+                            i++; column++;
+                        } else {
                             tokens.add(new Token(TokenType.SUBTRACTION, Character.toString(current), null, line, column));
+                        }
+                    }
                     case '*' ->
                             tokens.add(new Token(TokenType.MULTIPLICATION, Character.toString(current), null, line, column));
                     case '/' ->

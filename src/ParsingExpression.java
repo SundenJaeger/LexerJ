@@ -16,11 +16,13 @@
 //                | STRING
 //                | "(" expression ")"
 //                | IDENTIFIER ;
-
+// prefix=true  → ++i / --i (return new value)
+// prefix=false → i++ / i-- (return old value)
 public sealed interface ParsingExpression permits
         ParsingExpression.Assign,
         ParsingExpression.Binary,
         ParsingExpression.Grouping,
+        ParsingExpression.IncrDecr,
         ParsingExpression.Literal,
         ParsingExpression.Logical,
         ParsingExpression.Unary,
@@ -42,6 +44,9 @@ public sealed interface ParsingExpression permits
     }
 
     record Unary(Token operator, ParsingExpression right) implements ParsingExpression {
+    }
+
+    record IncrDecr(Token operator, Token variable, boolean prefix) implements ParsingExpression {
     }
 
     record Variable(Token name) implements ParsingExpression {
